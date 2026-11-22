@@ -1,0 +1,4 @@
+interface:
+  display_name: "Gépészeti tervezés"
+  short_description: "Alkatrész, összeállítás, rajz és FDM segédeszköz ellenőrzötten"
+  default_prompt: "Use $gepeszeti-tervezes to design a printable fixture for a part from its STEP model and check it for interference."

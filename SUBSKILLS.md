@@ -13,6 +13,7 @@
 | `solidworks-threaded-holes` | stable | M3-M12 螺纹孔、攻丝底孔、孔口倒角、螺纹属性和 STEP 输出 | `subskills/solidworks-threaded-holes/SKILL.md` |
 | `solidworks-engineering-drawing` | pilot | GB/T 第一角零件图/装配图、尺寸链、孔表、BOM、PDF/BMP 证据和制造交付审视 | `subskills/solidworks-engineering-drawing/SKILL.md` |
 | `autocad-automation` | stable | AutoCAD DWG/DXF 二维绘图、线稿矢量化、图层/文字/标注处理、导出和图纸自检 | `subskills/autocad-automation/SKILL.md` |
+| `gepeszeti-tervezes` | pilot | 匈牙利语机械设计工作法：已验证的零件/装配/工程图 COM 助手、STEP 孔位分析、FDM 治具规则、强制检查清单和项目收尾经验沉淀 (Hungarian) | `subskills/gepeszeti-tervezes/SKILL.md` |
 
 ## 推荐路由
 

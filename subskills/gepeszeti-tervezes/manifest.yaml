@@ -1,0 +1,25 @@
+name: gepeszeti-tervezes
+title: Gépészeti tervezés (3D/2D)
+status: pilot
+summary: Munkamódszer, kipróbált COM-segédkönyvtár és kötelező ellenőrzés alkatrészhez, összeállításhoz, műhelyrajzhoz, STEP-alapú segédeszközhöz és FDM-nyomtatáshoz; projektlezáró tanulság-rutin.
+entrypoint: SKILL.md
+scripts:
+  - scripts/transzform.py
+  - scripts/swk.py
+  - scripts/rajz.py
+  - scripts/step_elemzes.py
+  - scripts/ellenorzes.py
+references:
+  - references/munkamodszer.md
+  - references/com-alapok.md
+  - references/osszeallitas.md
+  - references/rajz.md
+  - references/step-elemzes.md
+  - references/fdm-segedeszkoz.md
+  - references/ellenorzes.md
+  - references/tanulsag-sablon.md
+depends_on:
+  - solidworks-automation
+related:
+  - solidworks-engineering-drawing
+  - solidworks-vibecad
