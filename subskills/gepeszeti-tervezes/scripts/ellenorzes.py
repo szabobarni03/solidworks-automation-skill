@@ -85,6 +85,47 @@ def render_views(out_dir, prefix, focus_prefix=None, views=VIEWS):
     return out
 
 
+def section_image(out, plane="elol", offset_mm=0.0, view=1, focus_prefix=None, doc=None):
+    """Metszetkép (Schnittansicht) PNG-be: a modell egy alapsíkkal elvágva, színes metszetfelülettel.
+
+    Mire jó: a belső átfedés (csavar a menetes furatban, csap a furatban, tengely a perselyben) a
+    külső képen nem látszik. A metszetben két alkatrész metszetfelülete egymásba lóg. Az ütközés-
+    vizsgálat darabszámot ad; ez a kép mutatja, hol és mekkora. A furatok tengelyén át vágj.
+    plane: 'elol'/'felul'/'jobb' alapsík; offset_mm: eltolás a síktól; view: swStandardViews_e
+    (1 = elöl, 5 = felül, 7 = izometrikus); focus_prefix: erre a komponensre nagyít.
+    """
+    from swk import m, std_planes
+    d = doc or sw().ActiveDoc
+    mvm = c0(d, "ModelViewManager")
+    sd = c0(mvm, "CreateSectionViewData")
+    sd.FirstPlane = std_planes(d)[("elol", "felul", "jobb").index(plane)]
+    sd.FirstOffset = m(offset_mm)
+    sd.ShowSectionCap = True
+    sd.KeepCapColor = False       # False: a metszetfelület az alkatrész színét kapja; True: egyszínű (fekete)
+    if not mvm.CreateSectionView(sd):
+        raise RuntimeError("Metszetnézet sikertelen")
+    try:
+        d.ShowNamedView2("", view)
+        d.ClearSelection2(True)
+        target = None
+        if focus_prefix and c0(d, "GetType") == 2:
+            target = next((c for c in d.GetComponents(True) if c.Name2.startswith(focus_prefix)), None)
+        if target is not None:
+            target.Select4(False, nv(), False)
+            c0(d, "ViewZoomToSelection")
+            d.ClearSelection2(True)
+        else:
+            c0(d, "ViewZoomtofit2")
+        c0(d, "GraphicsRedraw2")
+        Path(out).parent.mkdir(parents=True, exist_ok=True)
+        d.SaveAs3(out, 0, 2)
+    finally:
+        c0(mvm, "RemoveSectionView")
+    if not os.path.exists(out):
+        raise RuntimeError(f"Kép mentése sikertelen: {out}")
+    return out
+
+
 def _dump(res, path):
     if path:
         Path(path).parent.mkdir(parents=True, exist_ok=True)

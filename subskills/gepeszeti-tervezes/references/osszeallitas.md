@@ -72,7 +72,11 @@
   számolandó.
 - A nulla találat nem bizonyítja a működést. Elnyomott komponens és túl nagy hézag is nullát ad.
 - Futtasd újra minden paraméterváltozás után.
-- A magátmérőn modellezett menetes párok (csavar a menetes furatban, orsó az anyában)
-  szándékos átfedést adnak. Számold bele a várt darabszámba, és nézd meg, hogy csak ezek maradtak.
+- Menetes pár: a furatot a névleges átmérőn modellezd (M10: Ø10, M4: Ø4), menetprofil nélkül. A
+  magátmérős furatba a névleges csavar vagy orsó belelóg. A felhasználó ezt látja hibának (a rúd
+  "átmegy" a furat falán), és az ütközésvizsgálatot is elszennyezi. Ha a rajz tömege a magátmérővel
+  számol, a tömeget azzal ellenőrizd, utána bővítsd a furatot névlegesre. A várt ütközésszám így 0.
+- Szemrevételezés metszetben: `ellenorzes.section_image` minden furatos kapcsolatra (csap, csavar,
+  tengely). A vágósík a furat tengelyén menjen át. A darabszám nem mutatja, hol az átfedés; a metszet igen.
 - Csavar iránya: ellenőrizd, hogy a fej kívül van. A fordított csavar a fejével a lemezbe lóg, és
   ugyanolyan darabszámú, de nagyobb térfogatú átfedést ad.

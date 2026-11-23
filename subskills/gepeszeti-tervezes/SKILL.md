@@ -43,6 +43,8 @@ Ez a subskill a munkamódszert, a valódi projektekben bevált megoldásokat és
 - [ ] Minden alkatrész 1 test (`part_report`: `bodies == 1`), a térfogat és a befoglaló méret ésszerű.
 - [ ] Ütközésvizsgálat lefutott. Csak a szándékos pressz-illesztések szerepelnek, darabszámuk egyezik
       a várttal (`interference_report(expected=...)`). Importált STEP alösszeállítás = egy komponens.
+      Menetes furat névleges átmérőn: a menetes pár nem ütközés.
+- [ ] Metszetkép minden furatos kapcsolatról (`section_image`, a sík a tengelyen át), szemmel átnézve.
 - [ ] A kapcsolódó méretek a modellből jönnek. A koordináta-átszámítás egy ismert ponton vissza van
       ellenőrizve (pl. egy furat középpontja a ráhelyezett modellben).
 - [ ] Hajtó méret (mechanizmusnál) legalább két értéken újraépítve, ütközés nélkül.
@@ -65,7 +67,7 @@ Teljes lista és a tipikus hamis eredmények: [ellenorzes.md](references/ellenor
 | `scripts/swk.py` | `c0`, `m`, `nv`, `byref_int`, `sw`, `open_doc`, `props`, `std_planes`, `set_material` (angol anyagnév a nyelvi anyagkönyvtárra fordítva); `Part` (vázlat, kihúzás, vágás, forgatás, ref. sík/tengely/pont, körél-élletörés, mentés testszám-ellenőrzéssel); `Assembly` (elhelyezés, illesztés, hajtó méret). |
 | `scripts/rajz.py` | Lap méretaránnyal, nézet explicit méretaránnyal, darabjegyzék, tételszám, metszet, törött nézet, sugár->átmérő + illesztés + menetszöveg, pontosság, lapközépvonal, megjegyzés, PDF->PNG. |
 | `scripts/step_elemzes.py` | STEP import; furatok (hengerfelületek) és komponens-befoglalók JSON-ba. |
-| `scripts/ellenorzes.py` | Alkatrész-jelentés, ütközés-összefoglaló várt darabszámmal, nézetképek. |
+| `scripts/ellenorzes.py` | Alkatrész-jelentés, ütközés-összefoglaló várt darabszámmal, nézetképek, metszetkép (`section_image`). |
 | `scripts/osszevetes.py` | Referenciakép és modellkép egymás mellett, nézőszög-rács, sziluett-egyezés (IoU). Tiszta PIL, tesztelt. |
 | `scripts/megjelenes.py` | RealView-megjelenések névelőtag-szabályokkal (összeállítás) vagy egy alkatrész összes testére (`alkatresz`), RealView be/ki, kép egyedi nézőszögből, szögkeresés. |
 | `scripts/kontur.py` | Lemezkontúr érintő körökből és lekerekített sarkokból, terület előre (tömegbecslés), vázlatba rajzolás. Tiszta Python, tesztelt. |

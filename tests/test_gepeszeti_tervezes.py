@@ -223,3 +223,74 @@ def test_osszevetes_kivag_keeps_yellow_on_grey():
     img = Image.new("RGB", (100, 100), (215, 215, 215))
     img.paste((217, 204, 30), (20, 30, 80, 70))     # yellow: same luminance as the grey background
     assert o.kivag(img).size == (60, 40)
+
+
+def _metszet_csonk(monkeypatch, tmp_path, ment_hiba=False):
+    """Fake SolidWorks doc for ellenorzes.section_image: records the section data and the removal."""
+    import sys as _sys
+    import types
+    allapot = {"torolve": 0, "sd": None}
+
+    class Mvm:
+        def CreateSectionViewData(self):
+            return types.SimpleNamespace()
+
+        def CreateSectionView(self, sd):
+            allapot["sd"] = sd
+            return True
+
+        def RemoveSectionView(self):
+            allapot["torolve"] += 1
+
+    class Doc:
+        ModelViewManager = Mvm()
+
+        def GetType(self):
+            return 2
+
+        def GetComponents(self, top):
+            return []
+
+        def ShowNamedView2(self, nev, kod):
+            allapot["nezet"] = kod
+
+        def ClearSelection2(self, x):
+            pass
+
+        def ViewZoomtofit2(self):
+            pass
+
+        def GraphicsRedraw2(self):
+            pass
+
+        def SaveAs3(self, out, a, b):
+            if ment_hiba:
+                raise RuntimeError("mentés")
+            Path(out).write_bytes(b"png")
+
+    def c0(o, n):
+        a = getattr(o, n)
+        return a() if callable(a) else a
+
+    swk = types.SimpleNamespace(c0=c0, nv=lambda: None, sw=None, m=lambda v: v / 1000.0,
+                                std_planes=lambda d: ["elol", "felul", "jobb"])
+    monkeypatch.setitem(_sys.modules, "swk", swk)
+    monkeypatch.setitem(_sys.modules, "sw_measure", types.SimpleNamespace(inspect_interference=None))
+    return _load("ellenorzes"), Doc(), allapot
+
+
+def test_section_image_sets_plane_and_part_colored_caps(monkeypatch, tmp_path):
+    e, doc, allapot = _metszet_csonk(monkeypatch, tmp_path)
+    out = e.section_image(str(tmp_path / "m.png"), plane="felul", offset_mm=-100.0, view=5, doc=doc)
+    sd = allapot["sd"]
+    assert Path(out).is_file()
+    assert sd.FirstPlane == "felul" and abs(sd.FirstOffset + 0.1) < 1e-12
+    assert sd.ShowSectionCap is True and sd.KeepCapColor is False   # part-colored caps show overlap
+    assert allapot["nezet"] == 5 and allapot["torolve"] == 1
+
+
+def test_section_image_removes_section_on_failure(monkeypatch, tmp_path):
+    e, doc, allapot = _metszet_csonk(monkeypatch, tmp_path, ment_hiba=True)
+    with pytest.raises(RuntimeError):
+        e.section_image(str(tmp_path / "m.png"), doc=doc)
+    assert allapot["torolve"] == 1
