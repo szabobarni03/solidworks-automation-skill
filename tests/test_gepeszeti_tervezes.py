@@ -343,3 +343,22 @@ def test_hexagon_vertex_gives_across_flats():
     csucs = math.hypot(xp - xc, yp - yc)
     assert n == 6 and abs(2 * csucs * math.cos(math.radians(30)) - 0.010) < 1e-12   # laptávolság 10
     assert abs(math.hypot(xq, yq) - 0.005) < 1e-12                                  # csúcskör Ø10
+
+
+def test_circular_pattern_marks_seeds_and_axis():
+    pytest.importorskip("win32com")
+    swk = _load("swk")
+    from types import SimpleNamespace as NS
+    jel, hivas = [], []
+
+    def feat(nev):
+        return NS(Name=nev, Select2=lambda app, mark: jel.append((nev, app, mark)) or True)
+
+    p = object.__new__(swk.Part)
+    p.name = "proba"
+    p.doc = NS(ClearSelection2=lambda b: None)
+    p.fm = NS(FeatureCircularPattern4=lambda *a: hivas.append(a) or "minta")
+    assert p.circular_pattern([feat("Vagas1"), feat("Vagas2")], feat("Tengely"), 6) == "minta"
+    assert jel == [("Vagas1", True, 4), ("Vagas2", True, 4), ("Tengely", True, 1)]
+    n, szog, *_ = hivas[0]
+    assert n == 6 and abs(szog - 2 * math.pi) < 1e-12

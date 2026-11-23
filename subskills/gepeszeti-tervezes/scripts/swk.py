@@ -336,6 +336,25 @@ class Part:
             raise RuntimeError(f"{self.name}: vágás sikertelen")
         return f
 
+    def circular_pattern(self, features, axis, count, angle_deg=360.0):
+        """Körminta: a `features` feature-ök `count` példányban, egyenletesen az `angle_deg` szögön.
+
+        axis: referenciatengely feature (pl. `self.axis(...)` eredménye). A minta feature-ök 4-es,
+        a tengely 1-es jelöléssel kerül a kijelölésbe (`FeatureCircularPattern4`). Hatszög vagy
+        csillag alakú test oldalain ismétlődő furatcsoporthoz: egy oldalt kell megépíteni.
+        """
+        self.doc.ClearSelection2(True)
+        for f in features:
+            if not f.Select2(True, 4):
+                raise RuntimeError(f"{self.name}: a minta feature nem jelölhető ki: {f.Name}")
+        if not axis.Select2(True, 1):
+            raise RuntimeError(f"{self.name}: a minta tengelye nem jelölhető ki")
+        f = self.fm.FeatureCircularPattern4(int(count), math.radians(angle_deg), False, "", False, True, False)
+        self.doc.ClearSelection2(True)
+        if f is None:
+            raise RuntimeError(f"{self.name}: körminta sikertelen")
+        return f
+
     def revolve(self, cut=False):
         f = self.fm.FeatureRevolve2(True, True, False, cut, False, False, 0, 0, 2 * math.pi, 0,
                                     False, False, 0, 0, 0, 0, 0, True, True, True)
