@@ -153,21 +153,7 @@ def nezet_kep(out, ay_fok=0.0, ax_fok=0.0, alap="*Isometric", elrejt=(), doc=Non
                 c.Visible = 0
                 rejtett.append(c)
     try:
-        elekkel(d, elek)
-        d.Extension.SetUserPreferenceToggle(198, 0, True)   # swViewDisplayHideAllTypes
-        d.ShowNamedView2(alap, SZABVANY_NEZET.get(alap, -1))   # az azonosító nyelvfüggetlen
-        v = d.ActiveView
-        if ay_fok:
-            v.RotateAboutCenter(0.0, math.radians(ay_fok))
-        if ax_fok:
-            v.RotateAboutCenter(math.radians(ax_fok), 0.0)
-        for tengely, fok in forgatas:
-            if tengely == "x":
-                v.RotateAboutCenter(math.radians(fok), 0.0)
-            else:
-                v.RotateAboutCenter(0.0, math.radians(fok))
-        c0(d, "ViewZoomtofit2")
-        d.ClearSelection2(True)
+        _nezet(d, alap, [("y", ay_fok), ("x", ax_fok), *forgatas], elek)
         c0(d, "GraphicsRedraw2")
         d.SaveAs3(out, 0, 2)
     finally:
@@ -175,6 +161,107 @@ def nezet_kep(out, ay_fok=0.0, ax_fok=0.0, alap="*Isometric", elrejt=(), doc=Non
             c.Visible = 1
     if not os.path.exists(out):
         raise RuntimeError(f"Kép mentése sikertelen: {out}")
+    return out
+
+
+def _nezet(d, alap, forgatas, elek=True):
+    """Nézet beállítása: szabványnézet, forgatások sorban a képernyő tengelyei körül, nagyítás."""
+    elekkel(d, elek)
+    d.Extension.SetUserPreferenceToggle(198, 0, True)   # swViewDisplayHideAllTypes
+    d.ShowNamedView2(alap, SZABVANY_NEZET.get(alap, -1))   # az azonosító nyelvfüggetlen
+    v = d.ActiveView
+    for tengely, fok in forgatas:
+        if not fok:
+            continue
+        if tengely == "x":
+            v.RotateAboutCenter(math.radians(fok), 0.0)
+        else:
+            v.RotateAboutCenter(0.0, math.radians(fok))
+    c0(d, "ViewZoomtofit2")
+    d.ClearSelection2(True)
+
+
+def mozgas_kepkockak(out_dir, beallit, ertekek, doc=None, alap="*Isometric", forgatas=(), metszet=None,
+                     prefix="kocka"):
+    """Mozgásvideó képkockái: a nézetet egyszer állítja be (így a kép nem ugrál), aztán minden
+    értékre meghívja a `beallit(v)`-t (pl. a hajtó illesztés értéke + újraépítés), és PNG-t ment.
+
+    metszet: (sík, eltolás_mm), sík = 'elol'/'felul'/'jobb': metszetnézet az egész sorozatra, hogy
+    a belső mozgás (dugattyú, hajtórúd) látsszon. Kimenet: <out_dir>/<prefix>_000.png ...
+    Utána: `video(os.path.join(out_dir, prefix + "_%03d.png"), "mozgas.mp4")`.
+    """
+    d = doc or sw().ActiveDoc
+    os.makedirs(out_dir, exist_ok=True)
+    mvm = None
+    beallit(ertekek[0])
+    if metszet:
+        from swk import m, std_planes
+        mvm = c0(d, "ModelViewManager")
+        sd = c0(mvm, "CreateSectionViewData")
+        sd.FirstPlane = std_planes(d)[("elol", "felul", "jobb").index(metszet[0])]
+        sd.FirstOffset = m(metszet[1])
+        sd.ShowSectionCap = True
+        sd.KeepCapColor = False
+        if not mvm.CreateSectionView(sd):
+            raise RuntimeError("Metszetnézet sikertelen")
+    kepek = []
+    try:
+        _nezet(d, alap, forgatas)
+        for i, v in enumerate(ertekek):
+            beallit(v)
+            c0(d, "GraphicsRedraw2")
+            out = os.path.join(out_dir, f"{prefix}_{i:03d}.png")
+            d.SaveAs3(out, 0, 2)
+            if not os.path.exists(out):
+                raise RuntimeError(f"Kép mentése sikertelen: {out}")
+            kepek.append(out)
+    finally:
+        if mvm is not None:
+            c0(mvm, "RemoveSectionView")
+    return kepek
+
+
+def tartalom_doboz(kepek, hatter_kuszob=200, telitettseg=40, margo=20):
+    """A képsorozat közös tartalomdoboza (x0, y0, x1, y1): ami nem a világos, szürke SolidWorks-
+    háttér (minden csatorna >= hatter_kuszob és kis telítettség). Az összes kocka uniója, hogy a
+    mozgó rész egyik kockán se lógjon ki; margo képpont ráhagyással."""
+    from PIL import Image, ImageChops
+    doboz = None
+    for f in kepek:
+        im = Image.open(f).convert("RGB")
+        r, g, b = im.split()
+        sotet = Image.eval(ImageChops.darker(ImageChops.darker(r, g), b), lambda v: 255 if v < hatter_kuszob else 0)
+        szines = Image.eval(ImageChops.subtract(ImageChops.lighter(ImageChops.lighter(r, g), b),
+                                                ImageChops.darker(ImageChops.darker(r, g), b)),
+                            lambda v: 255 if v > telitettseg else 0)
+        bb = ImageChops.lighter(sotet, szines).getbbox()
+        if bb:
+            doboz = bb if doboz is None else (min(doboz[0], bb[0]), min(doboz[1], bb[1]),
+                                               max(doboz[2], bb[2]), max(doboz[3], bb[3]))
+    if doboz is None:
+        return None
+    w, h = Image.open(kepek[0]).size
+    return (max(0, doboz[0] - margo), max(0, doboz[1] - margo), min(w, doboz[2] + margo), min(h, doboz[3] + margo))
+
+
+def video(kepek_minta, out, fps=24, vag=True):
+    """Képsorozatból MP4 (H.264, yuv420p: telefonon és böngészőben is lejátszható) ffmpeg-gel.
+    kepek_minta: ffmpeg minta, pl. `.../kocka_%03d.png`. vag: az üres háttér levágása a közös
+    tartalomdobozra (`tartalom_doboz`). A páratlan képméretet párosra vágja."""
+    import glob
+    import shutil
+    import subprocess
+    exe = shutil.which("ffmpeg")
+    if exe is None:
+        raise RuntimeError("Nincs ffmpeg a PATH-on (Windows: winget install Gyan.FFmpeg)")
+    szuro = "scale=trunc(iw/2)*2:trunc(ih/2)*2"
+    if vag:
+        bb = tartalom_doboz(sorted(glob.glob(kepek_minta.replace("%03d", "[0-9][0-9][0-9]"))))
+        if bb:
+            szuro = f"crop={bb[2] - bb[0]}:{bb[3] - bb[1]}:{bb[0]}:{bb[1]}," + szuro
+    subprocess.run([exe, "-y", "-loglevel", "error", "-framerate", str(fps), "-i", kepek_minta,
+                    "-vf", szuro, "-c:v", "libx264", "-pix_fmt", "yuv420p", "-movflags", "+faststart", out],
+                   check=True)
     return out
 
 

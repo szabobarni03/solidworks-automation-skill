@@ -45,6 +45,11 @@
   `c0(doc, "EditRebuild3")`). A 0..360° minden 30°-ánál futtass ütközésvizsgálatot és olvasd ki a
   tengely `Transform2`-jét (a szögillesztés 180° fölött is jó, ha ugyanaz a sík-pár). A végén a
   szögillesztést nyomd el (`EditSuppress2`): így a felhasználó húzással forgathatja.
+- **Mozgásvideó:** kapcsold vissza a hajtó illesztést (`EditUnsuppress2`), és add át a szög
+  beállítását `megjelenes.mozgas_kepkockak`-nak (egy kör 96 kocka, a 360° nélkül, hogy a videó
+  hézag nélkül ismétlődjön; `metszet=("jobb", eltolás)` a belső mozgáshoz). Utána
+  `megjelenes.video` (ffmpeg, az üres hátteret levágja). Kb. 1 s/kocka 118 komponensnél. A végén
+  állítsd vissza a kezdő szöget, nyomd el újra az illesztést, és ne mentsd a dokumentumot.
 - **Csillagmotor-szerű agy (mesterrúd nélkül):** azonos rudak esetén az agy elfordulása határozatlan.
   Párhuzamos illesztés tartsa az agy egy síkját egy álló alkatrész síkjával párhuzamosan.
 - `EditRebuild3` és más paraméter nélküli COM-tag: mindig `c0(doc, "...")`, mert a pywin32 néha

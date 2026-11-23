@@ -395,6 +395,34 @@ def test_elekkel_and_view_rotations(monkeypatch, tmp_path):
     assert forgas == [(round(-90 * r, 4), 0.0), (0.0, round(45 * r, 4))]
 
 
+def test_mozgas_kepkockak_sets_view_once_and_crop_box(monkeypatch, tmp_path):
+    """A nézet egyszer áll be (a kép nem ugrál), minden értékre beállít + mentés; a vágódoboz a
+    kockák tartalmának uniója, a világos szürke háttér nélkül."""
+    import sys as _sys
+    import types
+    from types import SimpleNamespace as NS
+    PIL = pytest.importorskip("PIL.Image")
+    hivas = []
+    monkeypatch.setitem(_sys.modules, "swk", types.SimpleNamespace(c0=lambda o, n: hivas.append(n), sw=None))
+    mj = _load("megjelenes")
+    ertek = []
+    view = NS(DisplayMode=0, RotateAboutCenter=lambda ax, ay: None)
+    doc = NS(ActiveView=view, Extension=NS(SetUserPreferenceToggle=lambda *a: None),
+             ShowNamedView2=lambda *a: None, ClearSelection2=lambda *a: None,
+             SaveAs3=lambda path, a, b: PIL.new("RGB", (40, 30), (230, 230, 230)).save(path))
+    kepek = mj.mozgas_kepkockak(str(tmp_path), ertek.append, [0, 120, 240], doc=doc)
+    assert ertek == [0, 0, 120, 240] and len(kepek) == 3
+    assert hivas.count("ViewZoomtofit2") == 1 and hivas.count("GraphicsRedraw2") == 3
+    a, b = tmp_path / "a.png", tmp_path / "b.png"
+    im = PIL.new("RGB", (100, 80), (225, 225, 228))
+    im.paste((40, 50, 70), (10, 20, 30, 40))
+    im.save(a)
+    im = PIL.new("RGB", (100, 80), (225, 225, 228))
+    im.paste((200, 30, 30), (60, 50, 70, 60))   # telített piros, világos is lehetne
+    im.save(b)
+    assert mj.tartalom_doboz([str(a), str(b)], margo=5) == (5, 15, 75, 65)
+
+
 def test_set_driving_when_rebuild_is_property():
     """pywin32 a paraméter nélküli EditRebuild3-at néha property-ként adja (bool): nem hívható."""
     pytest.importorskip("win32com")
