@@ -615,7 +615,7 @@ class Assembly:
         if p is None:
             raise RuntimeError(f"Nincs ilyen méret: {dim_full_name}")
         p.SystemValue = m(value_mm)
-        self.doc.EditRebuild3()
+        c0(self.doc, "EditRebuild3")      # pywin32: néha property-ként jön (bool), nem hívható
 
     def save(self):
         self.doc.ForceRebuild3(False)

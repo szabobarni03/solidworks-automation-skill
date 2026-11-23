@@ -374,6 +374,41 @@ def test_rgb_szin_is_colorref(monkeypatch):
         mj.lapok(None, [], "x.p2m")
 
 
+def test_elekkel_and_view_rotations(monkeypatch, tmp_path):
+    import sys as _sys
+    import types
+    from types import SimpleNamespace as NS
+    hivas = []
+    c0 = lambda o, n: hivas.append(n)  # noqa: E731
+    monkeypatch.setitem(_sys.modules, "swk", types.SimpleNamespace(c0=c0, sw=None))
+    mj = _load("megjelenes")
+    forgas = []
+    view = NS(DisplayMode=0, RotateAboutCenter=lambda ax, ay: forgas.append((round(ax, 4), round(ay, 4))))
+    out = tmp_path / "k.png"
+    doc = NS(ActiveView=view, GetType=1, Extension=NS(SetUserPreferenceToggle=lambda *a: None),
+             ShowNamedView2=lambda *a: None, ClearSelection2=lambda *a: None,
+             SaveAs3=lambda path, a, b: open(path, "w").close())
+    mj.elekkel(doc)
+    assert view.DisplayMode == mj.ARNYEKOLT_ELEKKEL == 5 and hivas == ["ViewDisplayShaded"]
+    mj.nezet_kep(str(out), alap="*Front", doc=doc, forgatas=[("x", -90), ("y", 45)])
+    r = 3.14159265 / 180
+    assert forgas == [(round(-90 * r, 4), 0.0), (0.0, round(45 * r, 4))]
+
+
+def test_set_driving_when_rebuild_is_property():
+    """pywin32 a paraméter nélküli EditRebuild3-at néha property-ként adja (bool): nem hívható."""
+    pytest.importorskip("win32com")
+    swk = _load("swk")
+    from types import SimpleNamespace as NS
+    par = NS(SystemValue=0.0)
+    a = object.__new__(swk.Assembly)
+    a.doc = NS(Parameter=lambda n: par if n == "D1@Nyitas" else None, EditRebuild3=True)
+    a.set_driving("D1@Nyitas", 25)
+    assert abs(par.SystemValue - 0.025) < 1e-12
+    with pytest.raises(RuntimeError):
+        a.set_driving("D2@Nincs", 1)
+
+
 def test_plane_and_cylinder_faces_filter_by_axis_and_radius():
     pytest.importorskip("win32com")
     swk = _load("swk")

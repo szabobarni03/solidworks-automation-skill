@@ -36,6 +36,19 @@
   kimeneti méret), és ebből helyezd el a komponenseket illesztés előtt. A hajtó méret
   végigléptetésekor minden lépésben vesd össze a mért komponenshelyzetet a számolttal. Az eltérés
   0 legyen; ha nem, az illesztés rossz ágra ugrott.
+- **Távolság-illesztés oldala:** a sík-sík távolság-illesztés a másik oldalra is megoldódhat
+  (a komponens a kezdő helye helyett a sík túloldalára ugrik). Az `add_mate5_checked` `flip`
+  paramétere választ; illesztés és újraépítés után olvasd ki a `Transform2` eltolását, és állj
+  meg hibával, ha nem a számolt helyen van.
+- **Forgó tengely hajtása és kézi mozgatás:** a forgattyút szögillesztés hajtja (`MATE_ANGLE` = 6,
+  két sík, `angle` radiánban; állítás: `doc.Parameter("D1@<név>").SystemValue`, utána
+  `c0(doc, "EditRebuild3")`). A 0..360° minden 30°-ánál futtass ütközésvizsgálatot és olvasd ki a
+  tengely `Transform2`-jét (a szögillesztés 180° fölött is jó, ha ugyanaz a sík-pár). A végén a
+  szögillesztést nyomd el (`EditSuppress2`): így a felhasználó húzással forgathatja.
+- **Csillagmotor-szerű agy (mesterrúd nélkül):** azonos rudak esetén az agy elfordulása határozatlan.
+  Párhuzamos illesztés tartsa az agy egy síkját egy álló alkatrész síkjával párhuzamosan.
+- `EditRebuild3` és más paraméter nélküli COM-tag: mindig `c0(doc, "...")`, mert a pywin32 néha
+  property-ként adja (bool), és a közvetlen hívás `'bool' object is not callable` hibát ad.
 - **Szabadon forgó pofa vagy talp:** a nyílás a két csap távolságából számolandó (a lapok egymás
   felé fordulnak), nem egy rögzített irány mentén. A két lapot egymással párhuzamosra illeszd.
 

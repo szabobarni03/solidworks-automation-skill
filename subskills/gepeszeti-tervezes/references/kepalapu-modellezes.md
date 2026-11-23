@@ -30,6 +30,16 @@ sem olyan". Ezt csak a korai, alkatrészenkénti összevetés szűri ki.
      A sarok-lekerekítések hengeres lapjait az `exclude_radii` hagyja ki, így azok festettek maradnak.
    - Külön színű zseb vagy belső rész (pl. piros zseb, piros küllők): `part.faces_in_box(lo, hi)` a zseb
      térfogatával mint dobozzal; a test külső lapjai kilógnak belőle, így csak a zseb lapjai jönnek.
+   - Élkontúr: a műhelyrajzok 3D képei (Inventor) árnyékolt nézetben fekete élekkel renderelnek.
+     `megjelenes.elekkel(doc)` ugyanezt állítja be (`swViewDisplayMode_ShadedWithEdges`), mentés
+     előtt hívva a fájl is így nyílik meg. A `nezet_kep` alapból élekkel renderel.
+   - Fémek a rajz képéhez: a fényes acél részek krómosak (`metal/chrome/chromium plate.p2m`); a
+     `polished steel` és a `satin finish aluminum` a SolidWorks környezetében túl világos, illetve kékes.
+     A sárgaréz `polished brass` + sötétebb alapszín (pl. (150, 115, 40)) a rajz tónusát adja.
+   - Nézőirány: ha a rajz 3D képe más irányból néz (pl. függőleges tengely), a `nezet_kep`
+     `forgatas` listája (képernyő-tengelyek körüli forgatások sorban) állítja be, és az
+     `alkatresz_osszevetes` `iso_alap`/`iso_forgatas` paramétere ugyanezt adja át. Különben az
+     összevetés eltérő oldalt mutat, és a szín- vagy alakhiba nem látszik.
 
 ## Buktatók
 

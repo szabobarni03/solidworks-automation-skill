@@ -122,12 +122,28 @@ def realview(doc, be=True):
     c0(doc, "GraphicsRedraw2")
 
 
-def nezet_kep(out, ay_fok=0.0, ax_fok=0.0, alap="*Isometric", elrejt=(), doc=None):
+ARNYEKOLT_ELEKKEL = 5      # swViewDisplayMode_ShadedWithEdges
+
+
+def elekkel(doc, be=True):
+    """Árnyékolt nézet élekkel (be) vagy élek nélkül. A műhelyrajzok 3D képei (Inventor) így
+    renderelnek: a fekete élkontúr nélkül a modell laposabb és kevésbé hasonlít a referenciára.
+    A dokumentumba mentve megmarad, megnyitáskor is így látszik."""
+    c0(doc, "ViewDisplayShaded")
+    if be:
+        doc.ActiveView.DisplayMode = ARNYEKOLT_ELEKKEL
+
+
+def nezet_kep(out, ay_fok=0.0, ax_fok=0.0, alap="*Isometric", elrejt=(), doc=None, elek=True, forgatas=()):
     """Kép az aktív dokumentumról egyedi nézőszögből (PNG/JPG a kiterjesztés szerint).
 
     alap: szabványnézet neve (`*Front`, `*Left`, `*Isometric` ...), ebből forgat először az Y
     képernyőtengely körül `ay_fok`-kal, aztán az X körül `ax_fok`-kal. elrejt: komponens-névelőtagok,
     amelyek a kép idejére rejtve vannak (pl. burkolat, hogy a belső rész látsszon).
+    elek: árnyékolt nézet fekete élekkel (mint a rajzok 3D képei), lásd `elekkel`.
+    forgatas: további forgatások sorban, [("x" | "y", fok), ...] a képernyő tengelyei körül, az
+    `ay_fok`/`ax_fok` után. Pl. Z tengelyű forgástest a rajzhoz hasonlóan függőlegesen:
+    `alap="*Front", forgatas=[("x", -90), ("y", 45), ("x", 30)]`.
     """
     d = doc or sw().ActiveDoc
     rejtett = []
@@ -137,7 +153,7 @@ def nezet_kep(out, ay_fok=0.0, ax_fok=0.0, alap="*Isometric", elrejt=(), doc=Non
                 c.Visible = 0
                 rejtett.append(c)
     try:
-        c0(d, "ViewDisplayShaded")
+        elekkel(d, elek)
         d.Extension.SetUserPreferenceToggle(198, 0, True)   # swViewDisplayHideAllTypes
         d.ShowNamedView2(alap, SZABVANY_NEZET.get(alap, -1))   # az azonosító nyelvfüggetlen
         v = d.ActiveView
@@ -145,6 +161,11 @@ def nezet_kep(out, ay_fok=0.0, ax_fok=0.0, alap="*Isometric", elrejt=(), doc=Non
             v.RotateAboutCenter(0.0, math.radians(ay_fok))
         if ax_fok:
             v.RotateAboutCenter(math.radians(ax_fok), 0.0)
+        for tengely, fok in forgatas:
+            if tengely == "x":
+                v.RotateAboutCenter(math.radians(fok), 0.0)
+            else:
+                v.RotateAboutCenter(0.0, math.radians(fok))
         c0(d, "ViewZoomtofit2")
         d.ClearSelection2(True)
         c0(d, "GraphicsRedraw2")
@@ -165,12 +186,15 @@ def szogkereses(out_dir, szogek, alap="*Isometric", elrejt=(), prefix="szog"):
             for ay, ax in szogek]
 
 
-def alkatresz_osszevetes(part_path, ref_png, fo_crop, iso_crop, out_dir, alap="*Front"):
+def alkatresz_osszevetes(part_path, ref_png, fo_crop, iso_crop, out_dir, alap="*Front", iso_alap="*Isometric",
+                         iso_forgatas=()):
     """Egy alkatrész összevetése a rajzával: a rajz fő nézete és 3D képe a SolidWorks fő nézete és
     izometrikus RealView-képe mellett, egy rácsban. Kimenet: <out_dir>/<név>_osszevetes.png
 
     fo_crop, iso_crop: (x0, y0, x1, y1) kivágás a rajz PNG-jéből (a fő nézet és a 3D kép).
     alap: a SolidWorks szabványnézet, amely a rajz fő nézetének felel meg (`*Front`, `*Top` ...).
+    iso_alap, iso_forgatas: a 3D kép nézőiránya, ha a rajz 3D képe nem a SolidWorks izometrikus
+    irányából néz (pl. függőleges tengelyű forgástest), lásd `nezet_kep` `forgatas`.
     A dokumentumot a végén bezárja, hogy a következő alkatrész építését ne zavarja.
     """
     import osszevetes
@@ -180,7 +204,7 @@ def alkatresz_osszevetes(part_path, ref_png, fo_crop, iso_crop, out_dir, alap="*
     try:
         realview(d)
         f = nezet_kep(os.path.join(out_dir, f"{nev}_sw_fo.png"), alap=alap, doc=d)
-        i = nezet_kep(os.path.join(out_dir, f"{nev}_sw_iso.png"), alap="*Isometric", doc=d)
+        i = nezet_kep(os.path.join(out_dir, f"{nev}_sw_iso.png"), alap=iso_alap, doc=d, forgatas=iso_forgatas)
     finally:
         sw().CloseDoc(os.path.basename(c0(d, "GetPathName")))
     a = osszevetes.egymas_mellett(ref_png, f, os.path.join(out_dir, f"{nev}_fo.png"), crop=fo_crop,
