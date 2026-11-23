@@ -178,10 +178,12 @@ class Part:
         self.sm.AddToDB = True
 
     # --- síkok, tengelyek, pontok (illesztésekhez) --------------------------
-    def plane(self, base, dist, name=None):
+    def plane(self, base, dist, name=None, flip=False):
+        """Párhuzamos sík `dist` távolságra. flip=True: a másik oldalra (swRefPlaneReferenceConstraint
+        _OptionFlip = 256); negatív távolság helyett ezt használd."""
         self.doc.ClearSelection2(True)
         base.Select2(False, 0)
-        p = self.fm.InsertRefPlane(8, m(dist), 0, 0, 0, 0)
+        p = self.fm.InsertRefPlane(8 + (256 if flip else 0), m(dist), 0, 0, 0, 0)
         if p is None:
             raise RuntimeError(f"{self.name}: sík sikertelen")
         if name:
@@ -357,6 +359,45 @@ class Part:
                 if abs(p[6] - m(radius_mm)) < 1e-6 and abs(p[axis_index] - m(height_mm)) < 1e-6:
                     edges.append(edge)
         return edges
+
+    def corner_edges(self, pts_mm, tol_mm=0.01):
+        """Egyenes élek Z irányban (az elölnézeti vázlat kihúzásának élei) a megadott (x, y) pontokban.
+
+        Kihúzott lemez sarkainak lekerekítéséhez: a vázlat sarokpontjait adod meg, nem kell a
+        lekerekítést a vázlatban kiszámolni. Egy ponthoz több él is tartozhat (pl. zseb két oldalon).
+        """
+        tol = m(tol_mm)
+        cel = [(m(x), m(y)) for x, y in pts_mm]
+        edges = []
+        for body in self.doc.GetBodies2(0, True) or []:
+            for edge in c0(body, "GetEdges") or []:
+                curve = c0(edge, "GetCurve")
+                if not c0(curve, "IsLine"):
+                    continue
+                p = curve.LineParams          # rootx, rooty, rootz, dirx, diry, dirz
+                if abs(p[3]) > 1e-9 or abs(p[4]) > 1e-9:
+                    continue
+                if any(abs(p[0] - x) < tol and abs(p[1] - y) < tol for x, y in cel):
+                    edges.append(edge)
+        return edges
+
+    def fillet_edges(self, edges, r_mm, expected):
+        """Állandó sugarú lekerekítés pontosan `expected` élen; eltérésnél hibát dob.
+
+        `FeatureFillet(195, r, 0, 0)`: négy argumentum. Üres kijelölésnél a SolidWorks a teljes
+        kontúrt kerekítené, ezért a darabszámot előtte ellenőrizzük.
+        """
+        self.doc.ClearSelection2(True)
+        sel = c0(self.doc.SelectionManager, "CreateSelectData")
+        picked = sum(1 for e in edges if e.Select4(True, sel))
+        if picked != expected:
+            self.doc.ClearSelection2(True)
+            raise RuntimeError(f"{self.name}: lekerekítéshez {picked} él kijelölve, várt {expected}")
+        f = self.fm.FeatureFillet(195, m(r_mm), 0, 0)
+        self.doc.ClearSelection2(True)
+        if f is None:
+            raise RuntimeError(f"{self.name}: lekerekítés R{r_mm} sikertelen")
+        return f
 
     def chamfer_edges(self, edges, dist_mm, expected):
         """45°-os élletörés pontosan `expected` élen; eltérésnél kihagyja és False-t ad."""

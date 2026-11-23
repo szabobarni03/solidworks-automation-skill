@@ -64,12 +64,12 @@ Teljes lista és a tipikus hamis eredmények: [ellenorzes.md](references/ellenor
 | Fájl | Tartalom |
 |---|---|
 | `scripts/transzform.py` | Forgatás/eltolás mátrixok, `transform_data()` a `create_math_transform`-hoz. Tiszta Python, tesztelt. |
-| `scripts/swk.py` | `c0`, `m`, `nv`, `byref_int`, `sw`, `open_doc`, `props`, `std_planes`, `set_material` (angol anyagnév a nyelvi anyagkönyvtárra fordítva); `Part` (vázlat, kihúzás, vágás, forgatás, ref. sík/tengely/pont, körél-élletörés, mentés testszám-ellenőrzéssel); `Assembly` (elhelyezés, illesztés, hajtó méret). |
+| `scripts/swk.py` | `c0`, `m`, `nv`, `byref_int`, `sw`, `open_doc`, `props`, `std_planes`, `set_material` (angol anyagnév a nyelvi anyagkönyvtárra fordítva); `Part` (vázlat, kihúzás, vágás, forgatás, ref. sík (`flip` a másik oldalra)/tengely/pont, körél-élletörés, lemezsarok-élek pontok alapján (`corner_edges`) és lekerekítésük (`fillet_edges`), mentés testszám-ellenőrzéssel); `Assembly` (elhelyezés, illesztés, hajtó méret). |
 | `scripts/rajz.py` | Lap méretaránnyal, nézet explicit méretaránnyal, darabjegyzék, tételszám, metszet, törött nézet, sugár->átmérő + illesztés + menetszöveg, pontosság, lapközépvonal, megjegyzés, PDF->PNG. |
 | `scripts/step_elemzes.py` | STEP import; furatok (hengerfelületek) és komponens-befoglalók JSON-ba. |
-| `scripts/ellenorzes.py` | Alkatrész-jelentés, ütközés-összefoglaló várt darabszámmal, nézetképek, metszetkép (`section_image`). |
+| `scripts/ellenorzes.py` | Alkatrész-jelentés, ütközés-összefoglaló várt darabszámmal, nézetképek, metszetkép (`section_image`), tömeg a rajz darabjegyzékéhez (`mass_check`). |
 | `scripts/osszevetes.py` | Referenciakép és modellkép egymás mellett, nézőszög-rács, sziluett-egyezés (IoU). Tiszta PIL, tesztelt. |
-| `scripts/megjelenes.py` | RealView-megjelenések névelőtag-szabályokkal (összeállítás) vagy egy alkatrész összes testére (`alkatresz`), RealView be/ki, kép egyedi nézőszögből, szögkeresés. |
+| `scripts/megjelenes.py` | RealView-megjelenések névelőtag-szabályokkal (összeállítás) vagy egy alkatrész összes testére (`alkatresz`), RealView be/ki, kép egyedi nézőszögből, szögkeresés, alkatrész és rajza egy összevető képen (`alkatresz_osszevetes`). |
 | `scripts/kontur.py` | Lemezkontúr érintő körökből és lekerekített sarkokból, terület előre (tömegbecslés), vázlatba rajzolás. Tiszta Python, tesztelt. |
 | `scripts/forgastest.py` | Esztergált profil szakaszokból (hossz, átmérő, élletörés, horony, furat, süllyesztés), térfogat előre. Tiszta Python, tesztelt. |
 | `scripts/eval_ellenor.py` | Tesztalkatrész-készlet kiértékelése (`eval/esetek.json`): várt testszám, térfogat, befoglaló méret. Lásd [eval.md](references/eval.md). |

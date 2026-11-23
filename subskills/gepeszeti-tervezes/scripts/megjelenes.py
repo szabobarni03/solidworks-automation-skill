@@ -142,3 +142,28 @@ def szogkereses(out_dir, szogek, alap="*Isometric", elrejt=(), prefix="szog"):
     os.makedirs(out_dir, exist_ok=True)
     return [nezet_kep(os.path.join(out_dir, f"{prefix}_{ay:g}_{ax:g}.png"), ay, ax, alap, elrejt)
             for ay, ax in szogek]
+
+
+def alkatresz_osszevetes(part_path, ref_png, fo_crop, iso_crop, out_dir, alap="*Front"):
+    """Egy alkatrész összevetése a rajzával: a rajz fő nézete és 3D képe a SolidWorks fő nézete és
+    izometrikus RealView-képe mellett, egy rácsban. Kimenet: <out_dir>/<név>_osszevetes.png
+
+    fo_crop, iso_crop: (x0, y0, x1, y1) kivágás a rajz PNG-jéből (a fő nézet és a 3D kép).
+    alap: a SolidWorks szabványnézet, amely a rajz fő nézetének felel meg (`*Front`, `*Top` ...).
+    A dokumentumot a végén bezárja, hogy a következő alkatrész építését ne zavarja.
+    """
+    import osszevetes
+    from swk import open_doc
+    nev = os.path.splitext(os.path.basename(part_path))[0]
+    d = open_doc(part_path)
+    try:
+        realview(d)
+        f = nezet_kep(os.path.join(out_dir, f"{nev}_sw_fo.png"), alap=alap, doc=d)
+        i = nezet_kep(os.path.join(out_dir, f"{nev}_sw_iso.png"), alap="*Isometric", doc=d)
+    finally:
+        sw().CloseDoc(os.path.basename(c0(d, "GetPathName")))
+    a = osszevetes.egymas_mellett(ref_png, f, os.path.join(out_dir, f"{nev}_fo.png"), crop=fo_crop,
+                                  cimkek=("Rajz", "SolidWorks"), magassag=700)
+    b = osszevetes.egymas_mellett(ref_png, i, os.path.join(out_dir, f"{nev}_iso.png"), crop=iso_crop,
+                                  cimkek=("Rajz 3D", "SolidWorks RealView"), magassag=700)
+    return osszevetes.racs([a, b], os.path.join(out_dir, f"{nev}_osszevetes.png"), szelesseg=800)

@@ -73,3 +73,14 @@ figyelembe kell venni.
 - **Nem középsíkos vágás iránya:** a `FeatureCut4` egyirányú vágása a vázlatsík normálisával
   ellentétesen halad. Ha a vágásnak a sík "előtt" kell lennie, a vázlatot a vágás túlsó végére tedd,
   vagy használj középsíkos vágást (`mid=True`).
+
+## Lemez lekerekítése, zseb eltolt síkon
+
+- Kihúzott lemez sarkai: a vázlatot éles sarkokkal rajzold, a lekerekítést utána a 3D éleken csináld
+  (`Part.corner_edges(sarokpontok)` + `fillet_edges(élek, r, várt_db)`). Az ív-egyenes átmenetek
+  érintési pontjait így nem kell kiszámolni. `FeatureFillet(195, r, 0, 0)`: pontosan 4 argumentum.
+- Eltolt sík a másik oldalra: `plane(alap, d, flip=True)` (256-os opció), ne negatív távolság.
+- Zseb vágása eltolt síkról: a `FeatureCut4` iránya a sík normálisától függ. A normál síkon
+  `reverse=False`, a megfordított (`flip`) síkon `reverse=True` vág az anyagba. A rossz irány
+  "vágás sikertelen" hibát ad, nem üres feature-t.
+- Ferde falú zseb: `cut(mély, draft=30)` befelé szűkül (a kijelölt kontúr a felső él).

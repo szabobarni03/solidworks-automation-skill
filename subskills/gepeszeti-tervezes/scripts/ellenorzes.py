@@ -44,6 +44,19 @@ def part_report(doc=None):
             "size_mm": size, "ok": len(bodies) == 1}
 
 
+def mass_check(doc, drawing_mass_g, tolerance):
+    """`part_report` kiegészítve a rajz darabjegyzékének tömegével: eltérés és ok.
+
+    tolerance: megengedett relatív eltérés (0.03 = 3%). A rajz grammra vagy 0,001 kg-ra kerekít,
+    ezért a kis alkatrészeknél nagyobb tűrés kell (pl. 0,7 g-nál ±0,05 g = 7%).
+    """
+    r = part_report(doc)
+    elteres = (r["mass_g"] - drawing_mass_g) / drawing_mass_g
+    r.update(drawing_mass_g=drawing_mass_g, deviation=round(elteres, 4),
+             mass_ok=abs(elteres) <= tolerance, ok=r["ok"] and abs(elteres) <= tolerance)
+    return r
+
+
 def interference_report(asm=None, subassemblies_as_components=True, expected=None):
     """Ütközésvizsgálat összefoglalóval.
 

@@ -294,3 +294,12 @@ def test_section_image_removes_section_on_failure(monkeypatch, tmp_path):
     with pytest.raises(RuntimeError):
         e.section_image(str(tmp_path / "m.png"), doc=doc)
     assert allapot["torolve"] == 1
+
+
+def test_mass_check_flags_deviation(monkeypatch, tmp_path):
+    e, doc, _ = _metszet_csonk(monkeypatch, tmp_path)
+    monkeypatch.setattr(e, "part_report", lambda d: {"bodies": 1, "mass_g": 103.0, "ok": True})
+    r = e.mass_check(doc, 100.0, 0.05)
+    assert r["ok"] and abs(r["deviation"] - 0.03) < 1e-9
+    r = e.mass_check(doc, 100.0, 0.02)
+    assert not r["ok"] and not r["mass_ok"]
