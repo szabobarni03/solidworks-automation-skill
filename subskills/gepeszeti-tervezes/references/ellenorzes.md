@@ -4,6 +4,8 @@
 |---|---|---|---|
 | Testszám | `ellenorzes.part_report` | `bodies == 1` | Az átfedő vázlat 2 testet ad, és ez nem tűnik fel a képen. |
 | Térfogat, méret | `part_report` | Egyezik a becsléssel (anyag, tömeg) | Hiányzó feature: kisebb a térfogat. |
+| Darabjegyzék-tömeg | `mass_check(doc, rajz_g, tures)` | Az eltérés a tűrésen belül | A rajz tömege is lehet hibás. Nagy eltérésnél számold ki a térfogat × sűrűség értéket. Ha a rajz értéke nem jön ki semmilyen ésszerű sűrűséggel (pl. tölgylap 5,9 g/cm³-rel), a térfogatból várt tömeg legyen az elvárt, és írd le a döntést. Néhány grammos alkatrésznél a rajz kerekítése 15–40%-ot is ad. |
+| Csatlakozó menete | darabjegyzék és a fogadó furat rajza | A vett elem menete (NPT, G, M) azonos a furatéval | A forrásrajzok egymásnak ellentmondhatnak. Ne igazítsd csendben, jelezd a felhasználónak. |
 | Előfeltételek | projekt `checks()` | Nincs hiba | Csak a jelenlegi paraméterekre fut; a változatokra is futtasd. |
 | Ütközés | `ellenorzes.interference_report(expected=n)` | Csak a szándékos pressz-illesztések, n darab | Az importált alösszeállítás belső átfedései (`subassemblies_as_components=True` kell). Nulla találat elnyomott komponenssel. |
 | Belső átfedés | `ellenorzes.section_image(out, plane, offset_mm, view, focus_prefix)` | A metszetben minden furat és a benne ülő csap/csavar/tengely kontúrja egymás mellett fut, nincs egymásba lógó metszetfelület | Külső nézetben nem látszik. A vágósík nem a tengelyen megy át, ezért a hiba kimarad: a furat tengelyét tartalmazó síkkal vágj (`offset_mm` = a tengely koordinátája). |

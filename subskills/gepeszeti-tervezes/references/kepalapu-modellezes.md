@@ -59,6 +59,9 @@ sem olyan". Ezt csak a korai, alkatrészenkénti összevetés szűri ki.
 - **Referenciajelölők** a képen: a `nezet_kep` elrejti őket (198-as kapcsoló).
 - **Összeállítás-szintű megjelenés** felülírja a lapszíneket: a többszínű alkatrészt hagyd ki a
   szabályokból, és alkatrész szinten színezd.
+- **Ismétlődő elemek száma** (küllő, borda, ablak): ne szemre becsüld. A rajz elölnézetén
+  tapogasd le a pixeleket egy körön (szög szerint), és számold a sötét–világos váltásokat.
+  Szemre egy 12 küllős kerék 10-nek látszott, és a tömeg 3%-kal eltért.
 - **Szabadformás felület** (burkolatok, öntvények bordázata) vázlat + kihúzás lépésekkel csak
   durván közelíthető. Mondd meg előre a felhasználónak, mi lesz durva, és kérdezd meg, elég-e.
 - **Túl nagy cél.** Ha a feladat több tucat összetett alkatrész képről, az első lépés egy
