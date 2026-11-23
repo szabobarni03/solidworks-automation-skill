@@ -394,3 +394,15 @@ def test_plane_and_cylinder_faces_filter_by_axis_and_radius():
     assert p.plane_faces(2, 60) == [lapok[0]]
     assert p.cylinder_faces(2, exclude_radii=[4]) == [lapok[3]]
     assert p.cylinder_faces(radii=[3]) == [lapok[5]]
+
+
+def test_faces_in_box_keeps_only_enclosed_faces():
+    pytest.importorskip("win32com")
+    swk = _load("swk")
+    from types import SimpleNamespace as NS
+    zseb_fenek = NS(GetBox=(-0.03, 0.02, 0.006, 0.03, 0.1, 0.006))
+    zseb_fal = NS(GetBox=(-0.03, 0.02, 0.006, -0.018, 0.1, 0.01))
+    homlok = NS(GetBox=(-0.046, 0.0, 0.01, 0.046, 0.145, 0.01))
+    p = object.__new__(swk.Part)
+    p.doc = NS(GetBodies2=lambda a, b: [NS(GetFaces=lambda: [zseb_fenek, zseb_fal, homlok])])
+    assert p.faces_in_box((-31, 19, 6), (31, 101, 10)) == [zseb_fenek, zseb_fal]

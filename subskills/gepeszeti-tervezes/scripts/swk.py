@@ -465,6 +465,22 @@ class Part:
                 out.append(f)
         return out
 
+    def faces_in_box(self, lo_mm, hi_mm, tol_mm=0.01):
+        """Lapok, amelyek befoglaló doboza teljesen a (lo, hi) dobozon belül van (mm, modellkoordináta).
+        Zseb vagy horony összes lapjához (fenék, fal, lekerekítés), pl. külön színhez: a doboz a zseb
+        térfogata, a test külső lapjai kilógnak belőle."""
+        tol = m(tol_mm)
+        lo = [m(v) - tol for v in lo_mm]
+        hi = [m(v) + tol for v in hi_mm]
+        out = []
+        for body in self.doc.GetBodies2(0, True) or []:
+            for f in c0(body, "GetFaces") or []:
+                b = f.GetBox
+                b = b() if callable(b) else b
+                if all(lo[i] <= b[i] and b[3 + i] <= hi[i] for i in range(3)):
+                    out.append(f)
+        return out
+
     def fillet_edges(self, edges, r_mm, expected):
         """Állandó sugarú lekerekítés pontosan `expected` élen; eltérésnél hibát dob.
 

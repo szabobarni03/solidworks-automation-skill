@@ -28,6 +28,8 @@ sem olyan". Ezt csak a korai, alkatrészenkénti összevetés szűri ki.
    - Megmunkált lapok fémesen (furat, illesztett homlok, ahogy a műhelyrajzok 3D képein):
      `megjelenes.lapok(doc, part.plane_faces(...) + part.cylinder_faces(...), "metal/aluminum/polished aluminum.p2m")`.
      A sarok-lekerekítések hengeres lapjait az `exclude_radii` hagyja ki, így azok festettek maradnak.
+   - Külön színű zseb vagy belső rész (pl. piros zseb, piros küllők): `part.faces_in_box(lo, hi)` a zseb
+     térfogatával mint dobozzal; a test külső lapjai kilógnak belőle, így csak a zseb lapjai jönnek.
 
 ## Buktatók
 
