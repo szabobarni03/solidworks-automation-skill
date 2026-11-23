@@ -10,6 +10,7 @@
 | Mechanizmus | hajtó méret 2+ értéken | Újraépül, nincs ütközés | Csak az alaphelyzet ellenőrzött. |
 | Rajz | `pdf_to_png` és szemrevételezés | Méretarány, méretek olvashatók, nincs kóbor vonal | A "lefutott" nem ellenőrzés. A törött zónában lévő méret és a rossz méretarány csak képen látszik. |
 | Képek | `ellenorzes.render_views` | A lényeg nagyítva látszik | A teljes összeállításra zoomolva a kis alkatrész nem látszik: használd a `focus_prefix`-et. |
+| Referenciakép | `osszevetes.egymas_mellett`, `sziluett_egyezes` | Minden alkatrész után, rögzített nézőszögből; az eltérések leírva | A modellező szemének "jó" kép: csak egymás mellett látszik, hogy az arányok vagy a helyzet eltér. |
 | Átadás | README "mérendő" lista | Minden becsült érték fel van sorolva | - |
 
 ## Átadás előtti sorrend

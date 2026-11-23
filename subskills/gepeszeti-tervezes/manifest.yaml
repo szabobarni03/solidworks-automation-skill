@@ -9,6 +9,10 @@ scripts:
   - scripts/rajz.py
   - scripts/step_elemzes.py
   - scripts/ellenorzes.py
+  - scripts/osszevetes.py
+  - scripts/megjelenes.py
+  - scripts/eval_ellenor.py
+  - eval/esetek.json
 references:
   - references/munkamodszer.md
   - references/com-alapok.md
@@ -18,6 +22,8 @@ references:
   - references/fdm-segedeszkoz.md
   - references/ellenorzes.md
   - references/tanulsag-sablon.md
+  - references/kepalapu-modellezes.md
+  - references/eval.md
 depends_on:
   - solidworks-automation
 related:

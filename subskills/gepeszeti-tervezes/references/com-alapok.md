@@ -59,3 +59,9 @@ figyelembe kell venni.
   pontokra, és számolj konvex burkot (monotone chain). A burokra eltolt kontúr így mindig zárt.
 - **Feature-ök kapcsolódása:** a különálló darab (pl. egy szívókosár) új testet ad. A testszámot
   minden alkatrész végén ellenőrizd (`GetBodies2`), és egy test legyen, ha egy darabról van szó.
+- **Negatív síkeltolás:** az `InsertRefPlane` távolsága nem lehet negatív. Ha az alkatrész egy része
+  az alapsík "mögé" kerülne, építsd az alkatrészt eltolt helyi koordinátákban (pl. X + 100), tegyél
+  bele egy referenciasíkot a helyi 100-nál, és az összeállításban ezt a síkot illeszd a helyére.
+- **Nem középsíkos vágás iránya:** a `FeatureCut4` egyirányú vágása a vázlatsík normálisával
+  ellentétesen halad. Ha a vágásnak a sík "előtt" kell lennie, a vázlatot a vágás túlsó végére tedd,
+  vagy használj középsíkos vágást (`mid=True`).

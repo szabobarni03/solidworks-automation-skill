@@ -1,0 +1,99 @@
+{
+ "tures": {
+  "terfogat_rel": 0.005,
+  "meret_mm": 0.1
+ },
+ "esetek": [
+  {
+   "id": "karima",
+   "keres": "Karima: külső átmérő 120 mm, vastagság 10 mm, középen 40 mm-es átmenő furat, 6 db 9 mm-es átmenő furat egyenletesen elosztva egy 90 mm-es osztókörön.",
+   "elvart": {
+    "testek": 1,
+    "terfogat_mm3": 96713.9,
+    "meret_mm": [
+     10,
+     120,
+     120
+    ]
+   }
+  },
+  {
+   "id": "lemez_furatokkal",
+   "keres": "Lap 100 x 60 x 5 mm, a négy sarkában 1-1 db 6 mm-es átmenő furat, a furatközéppontok mindkét éltől 10 mm-re.",
+   "elvart": {
+    "testek": 1,
+    "terfogat_mm3": 29434.5,
+    "meret_mm": [
+     5,
+     60,
+     100
+    ]
+   }
+  },
+  {
+   "id": "lepcsos_tengely",
+   "keres": "Lépcsős tengely egy tengelyen: 30 mm átmérő 50 mm hosszon, utána 20 mm átmérő 40 mm hosszon, utána 15 mm átmérő 30 mm hosszon. Élletörés és lekerekítés nincs.",
+   "elvart": {
+    "testek": 1,
+    "terfogat_mm3": 53210.7,
+    "meret_mm": [
+     30,
+     30,
+     120
+    ]
+   }
+  },
+  {
+   "id": "cso",
+   "keres": "Cső: külső átmérő 50 mm, belső átmérő 40 mm, hossz 100 mm.",
+   "elvart": {
+    "testek": 1,
+    "terfogat_mm3": 70685.8,
+    "meret_mm": [
+     50,
+     50,
+     100
+    ]
+   }
+  },
+  {
+   "id": "l_konzol",
+   "keres": "L-konzol 5 mm vastag lemezből: az egyik szár külső mérete 80 mm, a másiké 50 mm, a szélesség 40 mm. A hajlításnál nincs lekerekítés, éles a sarok.",
+   "elvart": {
+    "testek": 1,
+    "terfogat_mm3": 25000,
+    "meret_mm": [
+     40,
+     50,
+     80
+    ]
+   }
+  },
+  {
+   "id": "hatszog_hasab",
+   "keres": "Hatszög hasáb: 24 mm laptávolság, 20 mm magas, a tengelyében 12 mm-es átmenő furat. Az egyik lappár párhuzamos egy alapsíkkal.",
+   "elvart": {
+    "testek": 1,
+    "terfogat_mm3": 7714.7,
+    "meret_mm": [
+     20,
+     24,
+     27.713
+    ]
+   }
+  },
+  {
+   "id": "hornyos_tomb",
+   "keres": "Tömb 60 x 40 x 30 mm (hossz x szélesség x magasság). A felső lapon a teljes hosszban végigmenő, középre helyezett, 20 mm széles és 10 mm mély horony.",
+   "elvart": {
+    "testek": 1,
+    "terfogat_mm3": 60000,
+    "meret_mm": [
+     30,
+     40,
+     60
+    ]
+   }
+  }
+ ]
+}

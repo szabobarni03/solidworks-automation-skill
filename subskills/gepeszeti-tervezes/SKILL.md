@@ -19,6 +19,11 @@ Ez a subskill a munkamódszert, a valódi projektekben bevált megoldásokat és
 
 ## Munkafolyamat
 
+0. **Bontás és "kész" feltétel.** Nagy célt (gép, motor, jármű) előbb bonts alkatrészekre vagy
+   csoportokra, mindegyikhez mérhető "kész" feltétellel (méretek, testszám, referencianézet). Egyszerre
+   egy csoport készül, és csak az előző ellenőrzése után jön a következő. Ha a cél egy kép vagy rajz
+   kinézete: [kepalapu-modellezes.md](references/kepalapu-modellezes.md), alkatrészenkénti
+   összevetéssel és az első eredmény korai megmutatásával.
 1. **Méretforrás rögzítése.** Sorrend: CAD/STEP modell > mérés (tolómérő) > adatlap > fotó.
    Minden méret mellé írd oda a forrását. Ami becsült, az legyen külön listában "mérendő" jelöléssel.
    Átvett STEP-nél először ellenőrizd, hogy van-e benne furat: [step-elemzes.md](references/step-elemzes.md).
@@ -45,6 +50,10 @@ Ez a subskill a munkamódszert, a valódi projektekben bevált megoldásokat és
 - [ ] FDM: nincs támaszt igénylő túlnyúlás, nincs törékeny rugalmas elem, van próbadarab a tűrésekhez.
       Részletek: [fdm-segedeszkoz.md](references/fdm-segedeszkoz.md).
 - [ ] A "mérendő" lista ott van az átadási README-ben.
+- [ ] Referenciakép vagy rajz esetén: minden alkatrészhez van egymás melletti összevető kép
+      ugyanabból a nézőszögből, sziluett-egyezés számmal, és az eltérések le vannak írva.
+- [ ] Ami projektszkriptben új, általános segédfüggvény lett (több projektben is kellene), az a
+      `scripts/` alá került, nem a projektmappában maradt.
 
 Teljes lista és a tipikus hamis eredmények: [ellenorzes.md](references/ellenorzes.md).
 
@@ -57,6 +66,9 @@ Teljes lista és a tipikus hamis eredmények: [ellenorzes.md](references/ellenor
 | `scripts/rajz.py` | Lap méretaránnyal, nézet explicit méretaránnyal, darabjegyzék, tételszám, metszet, törött nézet, sugár->átmérő + illesztés + menetszöveg, pontosság, lapközépvonal, megjegyzés, PDF->PNG. |
 | `scripts/step_elemzes.py` | STEP import; furatok (hengerfelületek) és komponens-befoglalók JSON-ba. |
 | `scripts/ellenorzes.py` | Alkatrész-jelentés, ütközés-összefoglaló várt darabszámmal, nézetképek. |
+| `scripts/osszevetes.py` | Referenciakép és modellkép egymás mellett, nézőszög-rács, sziluett-egyezés (IoU). Tiszta PIL, tesztelt. |
+| `scripts/megjelenes.py` | RealView-megjelenések névelőtag-szabályokkal, RealView be/ki, kép egyedi nézőszögből, szögkeresés. |
+| `scripts/eval_ellenor.py` | Tesztalkatrész-készlet kiértékelése (`eval/esetek.json`): várt testszám, térfogat, befoglaló méret. Lásd [eval.md](references/eval.md). |
 
 Használat saját projektszkriptből:
 
@@ -78,5 +90,7 @@ Futtatás a skill venv Pythonjával (Windows Store `python` alias nem jó).
    amit megold.
 3. Ügyfél- vagy munkahely-specifikus adat (cégnév, termékméretek, koordináták) **nem** kerül ide:
    a repo nyilvános. Az a projekt saját mappájában és jegyzeteiben marad.
-4. Futtasd a teszteket (`tests/test_gepeszeti_tervezes.py`), frissítsd a `references/munkamodszer.md`
+4. Ha a `scripts/` változott és fut a SolidWorks, futtasd az evalt is ([eval.md](references/eval.md)), és
+   hasonlítsd a sikerarányt az előzőhöz. Romlás esetén ne commitolj.
+5. Futtasd a teszteket (`tests/test_gepeszeti_tervezes.py`), frissítsd a `references/munkamodszer.md`
    "Projektnapló" táblázatát egy általános sorral, és commitolj.
