@@ -303,3 +303,43 @@ def test_mass_check_flags_deviation(monkeypatch, tmp_path):
     assert r["ok"] and abs(r["deviation"] - 0.03) < 1e-9
     r = e.mass_check(doc, 100.0, 0.02)
     assert not r["ok"] and not r["mass_ok"]
+
+
+def test_plane_edges_keeps_outline_and_filters_hole_circles():
+    pytest.importorskip("win32com")
+    swk = _load("swk")
+    from types import SimpleNamespace as NS
+
+    def vonal(root, d):
+        return NS(GetCurve=lambda: NS(IsLine=lambda: True, IsCircle=lambda: False, LineParams=(*root, *d)))
+
+    def kor(c, ax, r):
+        return NS(GetCurve=lambda: NS(IsLine=lambda: False, IsCircle=lambda: True, CircleParams=(*c, *ax, r)))
+
+    z = 0.006
+    elek = [vonal((0, 0, z), (1, 0, 0)),          # fedőlap éle
+            vonal((0, 0, z), (0, 0, 1)),          # függőleges él: nem a síkban fekszik
+            vonal((0, 0, 0), (1, 0, 0)),          # alsó lap éle
+            kor((0, 0, z), (0, 0, 1), 0.004),     # sarokív R4
+            kor((0, 0, z), (0, 0, -1), 0.0035),   # furat Ø7
+            kor((0, 0, z), (1, 0, 0), 0.004)]     # más irányú kör
+    p = object.__new__(swk.Part)
+    p.doc = NS(GetBodies2=lambda a, b: [NS(GetEdges=lambda: elek)])
+    assert p.plane_edges(2, 6.0, circle_radii=[4]) == [elek[0], elek[3]]
+    assert p.plane_edges(2, 6.0) == [elek[0], elek[3], elek[4]]
+
+
+def test_hexagon_vertex_gives_across_flats():
+    """A CreatePolygon pontja csúcs: s laptávolsághoz a csúcs s/√3-on van, a csúcskör d-hez d/2-n."""
+    pytest.importorskip("win32com")
+    swk = _load("swk")
+    from types import SimpleNamespace as NS
+    hivas = []
+    p = object.__new__(swk.Part)
+    p.sm = NS(CreatePolygon=lambda *a: hivas.append(a))
+    p.hexagon(0, 0, 10)
+    p.hexagon_corner(0, 0, 10)
+    (xc, yc, _, xp, yp, _, n, _), (_, _, _, xq, yq, _, _, _) = hivas
+    csucs = math.hypot(xp - xc, yp - yc)
+    assert n == 6 and abs(2 * csucs * math.cos(math.radians(30)) - 0.010) < 1e-12   # laptávolság 10
+    assert abs(math.hypot(xq, yq) - 0.005) < 1e-12                                  # csúcskör Ø10

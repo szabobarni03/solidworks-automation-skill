@@ -291,8 +291,12 @@ class Part:
         self.sm.CreateArc(m(cx), m(cy), 0, m(x1), m(y1), 0, m(x2), m(y2), 0, 1 if ccw else -1)
 
     def hexagon(self, x, y, s):
-        """Hatszög s laptávolsággal, csúcsok az y tengelyen."""
-        self.sm.CreatePolygon(m(x), m(y), 0, m(x), m(y + s / 2), 0, 6, True)
+        """Hatszög s laptávolsággal (kulcsnyílás), csúcsok az y tengelyen.
+
+        A `CreatePolygon` második pontja a SolidWorks 2026-ban mindig csúcs, az Inscribed kapcsolótól
+        függetlenül (élőben mérve). Ezért a csúcs s/√3 távolságra kerül, nem s/2-re.
+        """
+        self.sm.CreatePolygon(m(x), m(y), 0, m(x), m(y + s / math.sqrt(3)), 0, 6, True)
 
     def hexagon_corner(self, x, y, d_corner):
         """Hatszög csúcskör-átmérővel, csúcs a +x tengelyen (préscsap: csúcs = furat + túlfedés)."""
@@ -379,6 +383,31 @@ class Part:
                     continue
                 if any(abs(p[0] - x) < tol and abs(p[1] - y) < tol for x, y in cel):
                     edges.append(edge)
+        return edges
+
+    def plane_edges(self, axis_index, value_mm, circle_radii=None, tol_mm=0.01):
+        """Élek, amelyek teljesen egy tengelyre merőleges síkban fekszenek (pl. a fedőlap kontúrja).
+
+        axis_index: 0 = X, 1 = Y, 2 = Z; value_mm: a sík helye ezen a tengelyen. Az egyenes élek
+        mind benne vannak; a körélek (ívek is) csak akkor, ha a sugaruk a `circle_radii` listában
+        van (None = mind). Így a lap külső kontúrja (egyenesek + sarokívek) a furatok nélkül
+        kijelölhető, például egy körbefutó lekerekítéshez.
+        """
+        tol = m(tol_mm)
+        sugarak = None if circle_radii is None else [m(r) for r in circle_radii]
+        edges = []
+        for body in self.doc.GetBodies2(0, True) or []:
+            for edge in c0(body, "GetEdges") or []:
+                curve = c0(edge, "GetCurve")
+                if c0(curve, "IsLine"):
+                    p = curve.LineParams
+                    if abs(p[axis_index] - m(value_mm)) < tol and abs(p[3 + axis_index]) < 1e-9:
+                        edges.append(edge)
+                elif c0(curve, "IsCircle"):
+                    p = curve.CircleParams
+                    if (abs(p[axis_index] - m(value_mm)) < tol and abs(abs(p[3 + axis_index]) - 1) < 1e-9
+                            and (sugarak is None or any(abs(p[6] - r) < tol for r in sugarak))):
+                        edges.append(edge)
         return edges
 
     def fillet_edges(self, edges, r_mm, expected):

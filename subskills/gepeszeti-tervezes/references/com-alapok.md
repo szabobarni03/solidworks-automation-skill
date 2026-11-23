@@ -84,3 +84,17 @@ figyelembe kell venni.
   `reverse=False`, a megfordított (`flip`) síkon `reverse=True` vág az anyagba. A rossz irány
   "vágás sikertelen" hibát ad, nem üres feature-t.
 - Ferde falú zseb: `cut(mély, draft=30)` befelé szűkül (a kijelölt kontúr a felső él).
+- Fedőlap körbefutó lekerekítése (pl. R1 a külső kontúron, a furatok nélkül):
+  `fillet_edges(plane_edges(2, z, circle_radii=[r_sarok]), r, várt_db)`. A `plane_edges` a síkban
+  fekvő egyenes éleket mind visszaadja, a köríveket csak a megadott sugárral.
+- Átfedő kontúrok egy vázlatban (pl. téglalap és a végére rajzolt kör) "vágás sikertelen" hibát
+  adnak. Rajzold őket külön vázlatba, és vágd egymás után.
+
+## Hatszög (anya, kulcsnyílás)
+
+- A `CreatePolygon` második pontja a SolidWorks 2026-ban mindig csúcs, az `Inscribed` kapcsolótól
+  függetlenül (élőben mérve: mindkét értékkel 10 a csúcsok közti méret, ha a pont 5-re van).
+- Laptávolsághoz (s) a csúcs s/√3 távolságra kell: ezt csinálja a `Part.hexagon(x, y, s)`.
+  Csúcskör-átmérőhöz (d) a pont d/2-re kell: `Part.hexagon_corner(x, y, d)`.
+- Ellenőrzés: a befoglaló méret egyik iránya s, a másik 2s/√3 (10-es kulcsnál 10 és 11,55).
+  Ha mindkettő kisebb, a hatszög alulméretes; ezt a tömeg-ellenőrzés is jelzi.
