@@ -47,3 +47,15 @@ figyelembe kell venni.
 - Él kiválasztása élletöréshez: körélek sugár és magasság szerint (`Part.circle_edges`). A
   kiválasztott darabszámot ellenőrizd, eltérésnél ne készüljön feature.
 - STL/STEP mentés: `SaveAs3(path.STL, 0, 1)` a kiterjesztés alapján választ formátumot.
+- **A SaveAs hiba nélkül nem ment**, ha egy nyitott összeállítás hivatkozik az alkatrészre. A régi
+  fájl marad, és a következő lépés elavult geometriával dolgozik. Alkatrész újraépítése előtt
+  `sw.CloseAllDocuments(True)`. A `swk.Part.save` a fájl módosítási idejét ellenőrzi, és hibát dob.
+- **Forgatás tengelye:** a középvonal legyen hosszú (pl. ±300 mm). A rövid középvonal mellett a
+  forgatás néha hibát ad, ha a profil a középvonal végén túlnyúlik.
+- **Egymást érintő forgató vágások** (pl. két szomszédos szelepfészek, amelyek pontosan érintik
+  egymást) hibát adnak. Hagyj legalább 0,3 mm hézagot, vagy rajzold egy vázlatba.
+- **Élletörés vékony falon:** ha a letörés nagyobb a falvastagságnál, a forgatás hibát ad.
+- **Burkológörbe körökből:** ne tételezd fel, hogy minden kör a burkon van. Mintavételezd a köröket
+  pontokra, és számolj konvex burkot (monotone chain). A burokra eltolt kontúr így mindig zárt.
+- **Feature-ök kapcsolódása:** a különálló darab (pl. egy szívókosár) új testet ad. A testszámot
+  minden alkatrész végén ellenőrizd (`GetBodies2`), és egy test legyen, ha egy darabról van szó.

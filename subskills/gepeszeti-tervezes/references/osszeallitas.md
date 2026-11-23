@@ -24,6 +24,25 @@
   `EditRebuild3`. Legalább két értéken ellenőrizd (alsó és felső helyzet), mindkettőn ütközéssel.
 - Görgő síkon: pont-sík távolság a görgő sugarával.
 
+## Hajtáslánc-kényszerek (fogaskerék, bütyökkövető)
+
+- **Fogaskerék-illesztés (típus 10):** két forgástengelyt köt. Az áttétel `gear_num` = az első
+  entitás fogszáma, `gear_den` = a másodiké. Az alapértelmezett illesztés ellentétes forgást ad.
+  Azonos forgásirányhoz (pl. lánc- vagy szíjhajtás) `flip=True` kell.
+- **Lánchajtás merev modellben:** a láncot rögzített testként modellezd, a kerekeket fogaskerék-
+  illesztés kösse. Az álló lánc és a forgó kerék átfedése várt ütközés, szűrd ki a jelentésből.
+- **Bütyökkövető illesztés (típus 9):** először a bütyök felületét válaszd ki, utána a követő
+  hengerét (görgő). A bütyök felületlánca nem olvadhat össze a szomszédos bütyökével. Hagyj köztük
+  legalább 1 mm hézagot, különben az `add_mate5` 5-ös hibát ad.
+- **Felület kiválasztása összeállításban:** iterálj az alkatrész felületein
+  (`comp.GetModelDoc2()`), szűrj sugárra és befoglaló dobozra, majd `get_assembly_entity(comp, face)`
+  (`Component2.GetCorresponding`).
+- **Ellenőrzés:** forgasd végig a hajtótengelyt szögillesztéssel (két menetben, mert a szögillesztés
+  iránya 0 és 180 fok körül átfordulhat). Minden lépésben olvasd ki a hajtott tagok szögét a
+  `Transform2`-ből, és hasonlítsd össze az elvárt áttétellel.
+- **Motion study:** minden újraépítés után újra kell hozzáadni a motort. A fő illesztés-gráf egy
+  szabadságfokú legyen, különben a szimuláció nem egyértelmű.
+
 ## Ütközésvizsgálat
 
 - `inspect_interference(asm, treat_subassemblies_as_components=...)`.

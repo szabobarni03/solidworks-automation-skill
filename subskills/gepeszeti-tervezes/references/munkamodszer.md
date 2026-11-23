@@ -47,4 +47,5 @@ projekt/
 | Dátum | Típus | Fő tanulság |
 |---|---|---|
 | 2026-11-17 | Ollós emelőasztal: alkatrészek, összeállítás, hajtó méret, 2 rajz | Pont-sík távolság-illesztés kell hajtó méretnek. A rajz méretarányát háromszor kell beállítani (lap, nézet, lapvázlat). Forgásvázlat-sugarat utólag kell átmérőre váltani. |
+| 2026-11-22 | Belsőégésű motor mechanizmusa szkriptből: forgattyús hajtás, vezérlés, szelephajtás, motion study | A SaveAs csendben nem ment, ha nyitott összeállítás fogja a fájlt. A bütyökkövető illesztéshez külön felületlánc kell. A fogaskerék-illesztés alapból ellentétes irányú. Burkolathoz konvex burok pontmintából. |
 | 2026-11-19 | FDM befogó egy NYÁK-ra, STEP alapján, 3 változat + próbadarab | Az átvett STEP-ben nem mindig van furat. A furatokat hengerfelületekből kell olvasni. Az importált alösszeállítás egy komponensként menjen az ütközésvizsgálatba. FDM-ben ne legyen rugalmas pattintás. |

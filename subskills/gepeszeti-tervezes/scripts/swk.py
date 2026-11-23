@@ -9,6 +9,7 @@ Vázlatsíkok (vázlat x,y -> modell):
 import math
 import os
 import sys
+import time
 from pathlib import Path
 
 import pythoncom
@@ -94,6 +95,16 @@ def props(doc, **kw):
     mgr = doc.Extension.CustomPropertyManager("")
     for k, v in kw.items():
         mgr.Add3(k, 30, str(v), 2)
+
+
+def set_color(doc, rgb, specular=0.5, transparency=0.0):
+    """Alkatrész színe. A MaterialPropertyValues-t explicit VT_ARRAY|VT_R8 VARIANT-tal kell írni:
+    sima Python-listával az értékek elcsúsznak (R a 2., G az 5., B a 8. = átlátszóság helyre kerül),
+    és az alkatrész átlátszó, zöldes lesz. Sorrend: R, G, B, ambient, diffuse, specular, shininess,
+    transparency, emission.
+    """
+    vals = [rgb[0], rgb[1], rgb[2], 0.6, 0.8, specular, 0.4, transparency, 0.0]
+    doc.MaterialPropertyValues = VARIANT(pythoncom.VT_ARRAY | pythoncom.VT_R8, vals)
 
 
 def std_planes(model):
@@ -303,9 +314,11 @@ class Part:
             raise RuntimeError(f"{self.name}: {nb} test, várt {expect_bodies}")
         self.doc.ShowNamedView2("*Isometric", 7)
         c0(self.doc, "ViewZoomtofit2")
+        t0 = time.time() - 2.0
         self.doc.SaveAs3(self.path, 0, 1)
-        if not os.path.exists(self.path):
-            raise RuntimeError(f"Mentés sikertelen: {self.path}")
+        # Ha egy nyitott összeállítás hivatkozik a fájlra, a SaveAs3 csendben nem ír: a régi fájl marad.
+        if not os.path.exists(self.path) or os.path.getmtime(self.path) < t0:
+            raise RuntimeError(f"Mentés sikertelen (a fájlt nyitott dokumentum fogja?): {self.path}")
         base = os.path.splitext(self.path)[0]
         if step:
             self.doc.SaveAs3(base + ".STEP", 0, 1)
