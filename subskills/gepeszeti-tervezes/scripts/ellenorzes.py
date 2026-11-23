@@ -19,6 +19,19 @@ from sw_measure import inspect_interference  # noqa: E402
 VIEWS = {"alul": 6, "izo": 7, "elol": 1, "felul": 5}   # swStandardViews_e
 
 
+def _tomeg_g(doc):
+    """Tömeg grammban a hozzárendelt anyag sűrűségével.
+
+    Buktató: a `CreateMassProperty` objektum 1 kg/m³ sűrűséggel számol (a Mass = Volume), az anyagot
+    figyelmen kívül hagyja. A `GetMassProperties2` a valódi anyaggal számol: [.., 3] térfogat, [5] tömeg.
+    """
+    import pythoncom
+    from win32com.client import VARIANT
+    st = VARIANT(pythoncom.VT_BYREF | pythoncom.VT_I4, 0)
+    r = doc.Extension.GetMassProperties2(1, st, False)
+    return round(r[5] * 1000, 2) if r else None
+
+
 def part_report(doc=None):
     """Testszám, térfogat (mm³) és befoglaló méretek (mm). Nyomtatáshoz 1 zárt test kell."""
     d = doc or sw().ActiveDoc
@@ -27,6 +40,7 @@ def part_report(doc=None):
     box = d.GetPartBox(True)
     size = [round((box[i + 3] - box[i]) * 1000, 2) for i in range(3)] if box else None
     return {"bodies": len(bodies), "volume_mm3": round(mp.Volume * 1e9, 1) if mp else None,
+            "mass_g": _tomeg_g(d),
             "size_mm": size, "ok": len(bodies) == 1}
 
 

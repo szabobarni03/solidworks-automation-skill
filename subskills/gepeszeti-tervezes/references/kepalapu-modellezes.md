@@ -29,6 +29,14 @@ sem olyan". Ezt csak a korai, alkatrészenkénti összevetés szűri ki.
   Az IoU az alkatrészek közti javulás követésére jó, nem abszolút minősítésre.
 - **Kivágás.** A referenciából vágd ki a tárgyat (`--crop`), különben a felirat és a háttér is
   beleszámít. A SolidWorks-kép hátterét az `osszevetes.kivag` levágja.
+- **Háttér-maszk színnel:** a kivágás a csatornánkénti legnagyobb eltérést nézi, nem a
+  fényerőt. A sárga test fényerőre majdnem azonos a szürke háttérrel, és fényerő-küszöbbel félbe
+  vágódott.
+- **Nézőirány:** a referencia 3D képének irányából renderelj (`szogkereses`). Más irányból egy
+  meglévő lekerekítés vagy furat "hiányzónak" látszik, és a felhasználó joggal rákérdez. A RealView
+  nem rajzol élvonalat, ezért a kis lekerekítés kevésbé látszik, mint egy vonalas rajzon.
+- **Sárga festés:** a `painted/car/metallic gold` narancsnak látszik. Sárga festett részhez a
+  `plastic/high gloss/yellow high gloss plastic` közelebb áll.
 - **Referenciajelölők** a képen: a `nezet_kep` elrejti őket (198-as kapcsoló).
 - **Összeállítás-szintű megjelenés** felülírja a lapszíneket: a többszínű alkatrészt hagyd ki a
   szabályokból, és alkatrész szinten színezd.

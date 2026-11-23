@@ -36,7 +36,7 @@ def csoportosit(nevek, szabalyok):
 
 def materials_dir():
     """A SolidWorks telepítés megjelenés-könyvtára (data/graphics/Materials)."""
-    return os.path.join(os.path.dirname(sw().GetExecutablePath()), "data", "graphics", "Materials")
+    return os.path.join(c0(sw(), "GetExecutablePath"), "data", "graphics", "Materials")   # = telepítési mappa
 
 
 def _p2m(mat):
@@ -67,6 +67,24 @@ def alkalmaz(doc, szabalyok):
         n += len(nevek)
         print(f"  {os.path.basename(mat)}: {len(nevek)} komponens", flush=True)
     return n
+
+
+def alkatresz(doc, mat):
+    """RealView-megjelenés egy alkatrész összes testére (alkatrész szinten, a 3D képekhez és a
+    rajzhoz). Az összeállítás-szintű `alkalmaz` felülírhatja."""
+    import pythoncom
+    from win32com.client import VARIANT
+
+    ext = doc.Extension
+    rm = ext.CreateRenderMaterial(_p2m(mat))
+    if rm is None:
+        raise RuntimeError(f"Megjelenés nem tölthető: {mat}")
+    for b in doc.GetBodies2(0, True) or []:
+        rm.AddEntity(b)
+    e1 = VARIANT(pythoncom.VT_BYREF | pythoncom.VT_I4, 0)
+    e2 = VARIANT(pythoncom.VT_BYREF | pythoncom.VT_I4, 0)
+    if not ext.AddDisplayStateSpecificRenderMaterial(rm, 1, VARIANT(pythoncom.VT_DISPATCH, None), e1, e2):
+        raise RuntimeError(f"Megjelenés hozzáadása sikertelen: {mat}")
 
 
 def realview(doc, be=True):

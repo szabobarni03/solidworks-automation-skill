@@ -9,6 +9,8 @@ scripts:
   - scripts/rajz.py
   - scripts/step_elemzes.py
   - scripts/ellenorzes.py
+  - scripts/kontur.py
+  - scripts/forgastest.py
   - scripts/osszevetes.py
   - scripts/megjelenes.py
   - scripts/eval_ellenor.py

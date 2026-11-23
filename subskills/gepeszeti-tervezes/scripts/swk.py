@@ -27,7 +27,7 @@ from sw_assembly import (add_component, add_mate5_checked, create_math_transform
 from sw_connect import create_empty_dispatch_variant, get_com_member  # noqa: E402
 from transzform import I3, transform_data  # noqa: E402
 
-MATE_COINCIDENT, MATE_CONCENTRIC, MATE_PARALLEL, MATE_DISTANCE = 0, 1, 3, 5
+MATE_COINCIDENT, MATE_CONCENTRIC, MATE_PARALLEL, MATE_DISTANCE, MATE_LOCK = 0, 1, 3, 5, 16
 
 
 # ---------------------------------------------------------------------------
@@ -107,6 +107,45 @@ def set_color(doc, rgb, specular=0.5, transparency=0.0):
     doc.MaterialPropertyValues = VARIANT(pythoncom.VT_ARRAY | pythoncom.VT_R8, vals)
 
 
+_ANYAGNEVEK = {}
+
+
+def _anyagnevek(nyelv):
+    """Az anyagkönyvtár anyagnevei a megadott nyelven, a fájlbeli sorrendben (a nyelvi fájlok
+    sorrendje azonos, így az index fordít)."""
+    import re
+    if nyelv not in _ANYAGNEVEK:
+        path = os.path.join(c0(sw(), "GetExecutablePath"), "lang", nyelv, "sldmaterials",
+                            "solidworks materials.sldmat")
+        with open(path, encoding="utf-16") as f:
+            _ANYAGNEVEK[nyelv] = re.findall(r'<material name="([^"]*)"', f.read())
+    return _ANYAGNEVEK[nyelv]
+
+
+def set_material(doc, name, database="SOLIDWORKS Materials"):
+    """Anyag hozzárendelése az aktív konfigurációhoz, visszaolvasással ellenőrizve.
+
+    A név az angol anyagnév (pl. "AISI 1020 Steel, Cold Rolled", "AISI 304", "POM Acetal Copolymer").
+    Buktató: a `SetMaterialPropertyName2` csak a felület nyelvén megadott névvel működik (német
+    felületen "AISI 1020 Kaltgewalzter Stahl"), angol névvel hiba nélkül nem csinál semmit. Ezért
+    az angol nevet a nyelvi anyagkönyvtárak azonos indexe alapján lefordítjuk.
+    """
+    nyelv = c0(sw(), "GetCurrentLanguage")
+    helyi = name
+    if nyelv != "english":
+        angol = _anyagnevek("english")
+        if name in angol:
+            helyi = _anyagnevek(nyelv)[angol.index(name)]
+    cfg = c0(c0(doc, "ConfigurationManager"), "ActiveConfiguration").Name
+    doc.SetMaterialPropertyName2(cfg, database, helyi)
+    db = VARIANT(pythoncom.VT_BYREF | pythoncom.VT_BSTR, "")   # kimeneti paraméter: az adatbázis neve
+    got = doc.GetMaterialPropertyName2(cfg, db)
+    got = got[0] if isinstance(got, tuple) else got
+    if got != helyi:
+        raise RuntimeError(f"Anyag nem állítható be: {name} / {helyi} (kapott: {got!r})")
+    return helyi
+
+
 def std_planes(model):
     """Az első három referenciasík: elöl, felül, jobb (nyelvfüggetlen, nem név alapján)."""
     out = []
@@ -162,6 +201,39 @@ class Part:
         self.ref_geom.append(f)
         self.doc.ClearSelection2(True)
         return f
+
+    def hole_axis(self, x, y, z, name):
+        """Referenciatengely egy hengeres lapon (furat, csap) át. (x, y, z): a lap egy pontja (mm),
+        pl. furatnál a fal egy pontja. Illesztéshez megbízhatóbb, mint a lapot az összeállításban
+        kijelölni: ott a csap és a furat lapja egybeesik."""
+        self.doc.ClearSelection2(True)
+        lap = self._henger_lap(m(x), m(y), m(z))
+        if lap is None:
+            raise RuntimeError(f"{self.name}: nincs hengeres lap ezen a ponton: {(x, y, z)}")
+        lap.Select4(False, nv())
+        if not self.doc.InsertAxis2(True):
+            raise RuntimeError(f"{self.name}: tengely sikertelen ({name})")
+        f = self.doc.FeatureByPositionReverse(0)
+        f.Name = name
+        self.ref_geom.append(f)
+        self.doc.ClearSelection2(True)
+        return f
+
+    def _henger_lap(self, x, y, z, tol=1e-6):
+        """Az a hengeres lap, amelynek felülete átmegy a ponton (m). A koordinátás SelectByID2
+        nézetfüggő és néha nem talál; ez a geometriából keres."""
+        for body in self.doc.GetBodies2(0, True) or []:
+            for f in c0(body, "GetFaces") or []:
+                srf = c0(f, "GetSurface")
+                if not c0(srf, "IsCylinder"):
+                    continue
+                ox, oy, oz, ax, ay, az, r = srf.CylinderParams
+                vx, vy, vz = x - ox, y - oy, z - oz
+                t = vx * ax + vy * ay + vz * az
+                d = math.sqrt(max(0.0, vx * vx + vy * vy + vz * vz - t * t))
+                if abs(d - r) < tol:
+                    return f
+        return None
 
     def point(self, axis, plane, name):
         """Referenciapont tengely és sík metszetében (swRefPointType 6).
@@ -383,6 +455,18 @@ class Assembly:
     def mate(self, e1, e2, typ, dist_mm=0.0, name=None):
         select_entities_for_mate(self.doc, e1, e2)
         return add_mate5_checked(self.doc, typ, align=2, distance=m(dist_mm), name=name)
+
+    def plane(self, name):
+        """Az összeállítás saját alapsíkja: 'elol', 'felul' vagy 'jobb'."""
+        return std_planes(self.doc)[("elol", "felul", "jobb").index(name)]
+
+    def lock(self, comp1, comp2, name=None):
+        """Merev illesztés (swMateLOCK = 16) két komponens közt a mostani helyzetükben. A mozgó
+        részhez kötött kötőelemekhez (csavar, biztosítótárcsa): így együtt mozognak vele."""
+        self.doc.ClearSelection2(True)
+        self.component(comp1).Select4(False, nv(), False)
+        self.component(comp2).Select4(True, nv(), False)
+        return add_mate5_checked(self.doc, 16, align=2, name=name)
 
     def set_driving(self, dim_full_name, value_mm):
         """Hajtó méret (pl. 'D1@Magassag') állítása és újraépítés."""

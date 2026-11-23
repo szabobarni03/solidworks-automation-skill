@@ -23,9 +23,12 @@ from PIL import Image, ImageChops, ImageDraw
 
 
 def _eloter(rgb, kuszob=28):
-    """Előtér-maszk (L kép, 0/255): ami a (5, 5) pixel színétől (a háttértől) a küszöbnél jobban eltér."""
+    """Előtér-maszk (L kép, 0/255): ami a (5, 5) pixel színétől (a háttértől) a küszöbnél jobban eltér.
+    A legnagyobb csatornánkénti eltérés számít, nem a fényerő: a sárga a szürke háttértől főleg a kék
+    csatornában tér el, és fényerőre szinte azonos vele."""
     hatter = Image.new("RGB", rgb.size, rgb.getpixel((min(5, rgb.width - 1), min(5, rgb.height - 1))))
-    return ImageChops.difference(rgb, hatter).convert("L").point(lambda v: 255 if v > kuszob else 0)
+    r, g, b = ImageChops.difference(rgb, hatter).split()
+    return ImageChops.lighter(ImageChops.lighter(r, g), b).point(lambda v: 255 if v > kuszob else 0)
 
 
 def kivag(img, kuszob=28):

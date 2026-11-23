@@ -39,6 +39,14 @@ figyelembe kell venni.
 
 ## Építési buktatók
 
+- **Nem teljes körű forgatás iránya** (pl. 90°-os hajlítás egy rúdon): előre nem tudni. Próbáld
+  az egyik irányt, és ellenőrizd a testszámot (a jó irány összeköti a két szárat, 1 test). A rossz
+  irányt `f.Select2` + `Extension.DeleteSelection2(1)` (swDelete_Absorbed) törli a vázlatával
+  együtt. A befoglaló méret erre nem jó: a referenciasík beleszámít.
+- **Lemez kiköpölés (joggle):** a síkkontúrt húzd ki vastagon (középsíkra), aztán egy merőleges
+  síkon rajzold meg a lemez S alakú oldalnézeti sávját, és vágd le a sávon kívüli két tartományt.
+- **Kereszthorony és hasonló:** egy zárt sokszögként rajzold, ne két átfedő téglalapként.
+
 - Az átfedő, egymást metsző vázlatkontúrok egy kihúzásban hibát vagy több testet adnak. Bontsd
   külön vázlatokra/feature-ökre, vagy rajzolj egyesített kontúrt.
 - Feature után mindig ellenőrizd, hogy nem `None` jött-e vissza, és dobj hibát. A csendes hiba

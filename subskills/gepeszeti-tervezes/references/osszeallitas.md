@@ -23,6 +23,21 @@
 - Hajtó méret állítása: `doc.Parameter("D1@<illesztésnév>").SystemValue = h/1000`, utána
   `EditRebuild3`. Legalább két értéken ellenőrizd (alsó és felső helyzet), mindkettőn ütközéssel.
 - Görgő síkon: pont-sík távolság a görgő sugarával.
+- **Tengely-tengely illesztés típusa:** két referenciatengelyre `MATE_COINCIDENT` (0) kell. A
+  `MATE_CONCENTRIC` (1) referenciatengelyekre `AddMate5` hibát ad (error_status 0). Koncentrikus
+  csak hengeres lapokra jó.
+- **Furattengely az alkatrészben:** `Part.hole_axis(x, y, z, név)`. A hengeres lapot geometriából
+  keresi (a pont a palástján). A koordinátás `SelectByID2("FACE")` néha nem talál semmit. Az
+  összeállításban a csap és a furat lapja egybeesik, ezért ott ne lapot jelölj ki.
+- **Kötőelem mozgó részen** (csavar, biztosítótárcsa, csap): előbb helyezd el pontosan
+  transzformmal, aztán `Assembly.lock(komp, hordozó)` (swMateLOCK = 16). Így együtt mozog, és nem
+  kell rá 3 illesztés.
+- **Kinematika előre:** a mechanizmus helyzetét számold ki Pythonban (szög, hajtó méret,
+  kimeneti méret), és ebből helyezd el a komponenseket illesztés előtt. A hajtó méret
+  végigléptetésekor minden lépésben vesd össze a mért komponenshelyzetet a számolttal. Az eltérés
+  0 legyen; ha nem, az illesztés rossz ágra ugrott.
+- **Szabadon forgó pofa vagy talp:** a nyílás a két csap távolságából számolandó (a lapok egymás
+  felé fordulnak), nem egy rögzített irány mentén. A két lapot egymással párhuzamosra illeszd.
 
 ## Hajtáslánc-kényszerek (fogaskerék, bütyökkövető)
 
@@ -57,3 +72,7 @@
   számolandó.
 - A nulla találat nem bizonyítja a működést. Elnyomott komponens és túl nagy hézag is nullát ad.
 - Futtasd újra minden paraméterváltozás után.
+- A magátmérőn modellezett menetes párok (csavar a menetes furatban, orsó az anyában)
+  szándékos átfedést adnak. Számold bele a várt darabszámba, és nézd meg, hogy csak ezek maradtak.
+- Csavar iránya: ellenőrizd, hogy a fej kívül van. A fordított csavar a fejével a lemezbe lóg, és
+  ugyanolyan darabszámú, de nagyobb térfogatú átfedést ad.

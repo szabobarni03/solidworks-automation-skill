@@ -152,3 +152,74 @@ def test_eval_ertekel_and_summary():
     o = ev.osszegez({"a": jo, "b": rossz})
     assert o["sikeres"] == 1 and o["sikertelen"] == ["b"]
     assert ev.osszehasonlit({"a": jo, "b": rossz}, {"a": rossz, "b": rossz}) == {"a": "javult"}
+
+
+# --- kontúr érintő körökből -----------------------------------------------------------------
+def test_kontur_stadium_area():
+    k = _load("kontur")
+    lanc = k.kontur([("kor", (0, 0), 5), ("kor", (20, 0), 5)])
+    assert abs(k.terulet(lanc) - (20 * 10 + math.pi * 25)) < 1e-6
+
+
+def test_kontur_tapered_link_area_positive_and_closed():
+    k = _load("kontur")
+    lanc = k.kontur([("kor", (0, 0), 10), ("kor", (0, -50), 6)])
+    pts = [(s[1], s[2]) if s[0] == "vonal" else (s[2], s[3]) for s in lanc]
+    for (a, b), (c, _) in zip(pts, pts[1:] + pts[:1]):
+        assert math.dist(b, c) < 1e-9          # a lánc folytonos
+    assert k.terulet(lanc) > 50 * 12
+
+
+def test_kontur_inner_fillet_on_l_shape():
+    # L alak 0-s sugarú "körökkel": 40x10 vízszintes + 10x40 függőleges szár, belső sarok R5
+    k = _load("kontur")
+    el = [("kor", (0, 40), 0), ("kor", (0, 0), 0), ("kor", (40, 0), 0), ("kor", (40, 10), 0),
+          ("sarok", 5, ((10, 10), 0)), ("kor", (10, 40), 0)]
+    A = k.terulet(k.kontur(el))
+    vart = 40 * 10 + 10 * 30 + (25 - math.pi * 25 / 4)     # belső lekerekítés anyagot ad
+    assert abs(A - vart) < 1e-6
+
+
+def test_kontur_fillet_too_big_raises():
+    k = _load("kontur")
+    el = [("kor", (0, 40), 0), ("kor", (0, 0), 0), ("kor", (40, 0), 0), ("kor", (40, 10), 0),
+          ("sarok", 50, ((10, 10), 0)), ("kor", (10, 40), 0)]
+    with pytest.raises(ValueError):
+        k.kontur(el)
+
+
+def test_forgastest_cylinder_volume():
+    f = _load("forgastest")
+    assert abs(f.terfogat(f.profil([(20, 10)])) - math.pi * 25 * 20) < 1e-9
+
+
+def test_forgastest_chamfer_and_groove_volume():
+    f = _load("forgastest")
+    # Ø8 x 3, 1 mm wide Ø6 groove in the middle, 0.5x45 chamfer on the left end
+    pts = f.profil([(1, 8), (1, 6), (1, 8)], letores={0: (0.5, 0)})
+    kup = math.pi * 0.5 / 3 * (3.5 ** 2 + 3.5 * 4 + 4 ** 2)      # frustum of the chamfer
+    vart = kup + math.pi * 16 * 0.5 + math.pi * 9 + math.pi * 16
+    assert abs(f.terfogat(pts) - vart) < 1e-9
+
+
+def test_forgastest_bore_with_countersinks():
+    f = _load("forgastest")
+    pts = f.profil([(10, 8)], furat=4, sullyesztes=(6, 0))
+    sully = math.pi * 1 / 3 * (3 ** 2 + 3 * 2 + 2 ** 2)          # 90 deg countersink, depth 1
+    vart = math.pi * 16 * 10 - math.pi * 4 * 9 - sully
+    assert abs(f.terfogat(pts) - vart) < 1e-9
+    assert min(r for _, r in pts) == 2
+
+
+def test_forgastest_concave_chamfer_raises():
+    f = _load("forgastest")
+    with pytest.raises(ValueError):
+        f.profil([(5, 6), (5, 10)], letores={0: (0, 0.5)})
+
+
+def test_osszevetes_kivag_keeps_yellow_on_grey():
+    from PIL import Image
+    o = _load("osszevetes")
+    img = Image.new("RGB", (100, 100), (215, 215, 215))
+    img.paste((217, 204, 30), (20, 30, 80, 70))     # yellow: same luminance as the grey background
+    assert o.kivag(img).size == (60, 40)

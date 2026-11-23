@@ -65,3 +65,14 @@
 - Metszet: a metszővonalat a nézet aktív vázlatába rajzold. A vázlatkoordináta
   `(lap - nézetpozíció) / nézet méretarány`. Utána `CreateSectionViewAt5`.
 - Megjegyzés előtt `ClearSelection2`. Kijelölés mellett a jegyzet mutatóvonalat kap.
+- **Anyag oszlop:** a `bom-material.sldbomtbt` az SW-Material értéket "$PRP:" előtaggal mutatja.
+  Tegyél az alkatrészbe saját egyéni tulajdonságot az anyagnévvel (pl. `Anyag`), és az oszlopot
+  `SetColumnCustomProperty(oszlop, "Anyag")`-gal arra állítsd.
+- **Keskeny darabjegyzék:** a fájlnév oszlop törölhető (`DeleteColumn2(1, True)`), ha a megnevezés
+  oszlop megvan. Az oszlopszélességet `SetColumnWidth(oszlop, m, 0)`-val állítsd úgy, hogy minden
+  sor egysoros legyen. A kétsoros cellák a tábla magasságát közel duplázzák, és rálóg a nézetekre.
+- **Rejtett tételek:** az elölnézeten takart alkatrészek (belső lemez, távtartó) nem kapnak
+  tételszámot. Futtasd a `balloons`-t egy második nézetre is.
+- **Szövegmező:** a DIN lap "Benennung" mezője a rajz egyéni tulajdonságából jön. Állítsd a
+  rajzon és a modellen is.
+- Oktatási licencnél a "SOLIDWORKS Lehrprodukt" vízjel minden lapon ott van, nem kapcsolható ki.
