@@ -21,6 +21,13 @@ sem olyan". Ezt csak a korai, alkatrészenkénti összevetés szűri ki.
    többit építed. Az irány hibáját itt a legolcsóbb javítani.
 6. **Megjelenés.** A szín és a fényezés a hasonlóság nagy része: `megjelenes.alkalmaz` RealView
    anyagokkal, `megjelenes.realview`.
+   - A színt a referenciaképről mintázd (egy megvilágított lap pixelértéke), ne becsüld.
+   - Festett test egyedi színnel: `megjelenes.alkatresz(doc, "painted/car/steel grey.p2m", szin=(R, G, B))`.
+     A `painted/car/*` megjelenések átveszik a `PrimaryColor`-t, a `painted/powder coat/*` nem
+     (élőben mérve: a porfesték fekete maradt).
+   - Megmunkált lapok fémesen (furat, illesztett homlok, ahogy a műhelyrajzok 3D képein):
+     `megjelenes.lapok(doc, part.plane_faces(...) + part.cylinder_faces(...), "metal/aluminum/polished aluminum.p2m")`.
+     A sarok-lekerekítések hengeres lapjait az `exclude_radii` hagyja ki, így azok festettek maradnak.
 
 ## Buktatók
 

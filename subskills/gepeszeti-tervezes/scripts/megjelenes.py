@@ -69,9 +69,28 @@ def alkalmaz(doc, szabalyok):
     return n
 
 
-def alkatresz(doc, mat):
+def rgb_szin(rgb):
+    """(R, G, B) 0..255 -> a RenderMaterial.PrimaryColor egész értéke (COLORREF: R + G·256 + B·65536)."""
+    r, g, b = (int(round(v)) for v in rgb)
+    return r + 256 * g + 65536 * b
+
+
+def alkatresz(doc, mat, szin=None):
     """RealView-megjelenés egy alkatrész összes testére (alkatrész szinten, a 3D képekhez és a
-    rajzhoz). Az összeállítás-szintű `alkalmaz` felülírhatja."""
+    rajzhoz). Az összeállítás-szintű `alkalmaz` felülírhatja. szin: (R, G, B) 0..255, a megjelenés
+    alapszíne helyett (pl. festett felület a rajz 3D képének árnyalatában)."""
+    _hozzaad(doc, mat, doc.GetBodies2(0, True) or [], szin)
+
+
+def lapok(doc, faces, mat, szin=None):
+    """RealView-megjelenés kijelölt lapokra (pl. a festett test megmunkált lapjai fémesek).
+    A lap szintű megjelenés erősebb a test szintűnél, ezért a sorrend mindegy."""
+    if not faces:
+        raise ValueError(f"Nincs lap a megjelenéshez: {mat}")
+    _hozzaad(doc, mat, faces, szin)
+
+
+def _hozzaad(doc, mat, entitasok, szin=None):
     import pythoncom
     from win32com.client import VARIANT
 
@@ -79,8 +98,10 @@ def alkatresz(doc, mat):
     rm = ext.CreateRenderMaterial(_p2m(mat))
     if rm is None:
         raise RuntimeError(f"Megjelenés nem tölthető: {mat}")
-    for b in doc.GetBodies2(0, True) or []:
-        rm.AddEntity(b)
+    if szin is not None:
+        rm.PrimaryColor = rgb_szin(szin)
+    for e in entitasok:
+        rm.AddEntity(e)
     e1 = VARIANT(pythoncom.VT_BYREF | pythoncom.VT_I4, 0)
     e2 = VARIANT(pythoncom.VT_BYREF | pythoncom.VT_I4, 0)
     if not ext.AddDisplayStateSpecificRenderMaterial(rm, 1, VARIANT(pythoncom.VT_DISPATCH, None), e1, e2):

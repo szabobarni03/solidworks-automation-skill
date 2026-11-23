@@ -362,3 +362,35 @@ def test_circular_pattern_marks_seeds_and_axis():
     assert jel == [("Vagas1", True, 4), ("Vagas2", True, 4), ("Tengely", True, 1)]
     n, szog, *_ = hivas[0]
     assert n == 6 and abs(szog - 2 * math.pi) < 1e-12
+
+
+def test_rgb_szin_is_colorref(monkeypatch):
+    import sys as _sys
+    import types
+    monkeypatch.setitem(_sys.modules, "swk", types.SimpleNamespace(c0=None, sw=None))
+    mj = _load("megjelenes")
+    assert mj.rgb_szin((60, 78, 96)) == 60 + 78 * 256 + 96 * 65536
+    with pytest.raises(ValueError):
+        mj.lapok(None, [], "x.p2m")
+
+
+def test_plane_and_cylinder_faces_filter_by_axis_and_radius():
+    pytest.importorskip("win32com")
+    swk = _load("swk")
+    from types import SimpleNamespace as NS
+
+    def sik(n, pt):
+        return NS(GetSurface=lambda: NS(IsPlane=lambda: True, IsCylinder=lambda: False, PlaneParams=(*n, *pt)))
+
+    def henger(ax, r):
+        return NS(GetSurface=lambda: NS(IsPlane=lambda: False, IsCylinder=lambda: True,
+                                        CylinderParams=(0, 0, 0, *ax, r)))
+
+    lapok = [sik((0, 0, 1), (0, 0, 0.06)), sik((0, 0, -1), (0, 0, 0)), sik((1, 0, 0), (0.022, 0, 0)),
+             henger((0, 0, 1), 0.016), henger((0, 0, -1), 0.004), henger((1, 0, 0), 0.003)]
+    p = object.__new__(swk.Part)
+    p.doc = NS(GetBodies2=lambda a, b: [NS(GetFaces=lambda: lapok)])
+    assert p.plane_faces(2) == lapok[:2]
+    assert p.plane_faces(2, 60) == [lapok[0]]
+    assert p.cylinder_faces(2, exclude_radii=[4]) == [lapok[3]]
+    assert p.cylinder_faces(radii=[3]) == [lapok[5]]

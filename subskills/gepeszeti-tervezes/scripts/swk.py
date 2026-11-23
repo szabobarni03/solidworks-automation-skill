@@ -429,6 +429,42 @@ class Part:
                         edges.append(edge)
         return edges
 
+    def plane_faces(self, axis_index, value_mm=None, tol_mm=0.01):
+        """Sík lapok, amelyek normálisa a megadott tengellyel párhuzamos (0 = X, 1 = Y, 2 = Z);
+        value_mm esetén csak az ezen a koordinátán fekvők. Megmunkált lapok színezéséhez."""
+        out = []
+        for body in self.doc.GetBodies2(0, True) or []:
+            for f in c0(body, "GetFaces") or []:
+                srf = c0(f, "GetSurface")
+                if not c0(srf, "IsPlane"):
+                    continue
+                p = srf.PlaneParams              # nx, ny, nz, px, py, pz
+                if abs(abs(p[axis_index]) - 1) > 1e-9:
+                    continue
+                if value_mm is None or abs(p[3 + axis_index] - m(value_mm)) < m(tol_mm):
+                    out.append(f)
+        return out
+
+    def cylinder_faces(self, axis_index=None, radii=None, exclude_radii=(), tol_mm=0.01):
+        """Hengeres lapok (furat, csap, csonk). axis_index: csak a tengellyel párhuzamosak;
+        radii: csak ezek a sugarak (mm); exclude_radii: ezek nélkül (pl. a sarok-lekerekítések)."""
+        tol = m(tol_mm)
+        out = []
+        for body in self.doc.GetBodies2(0, True) or []:
+            for f in c0(body, "GetFaces") or []:
+                srf = c0(f, "GetSurface")
+                if not c0(srf, "IsCylinder"):
+                    continue
+                p = srf.CylinderParams           # ox, oy, oz, ax, ay, az, r
+                if axis_index is not None and abs(abs(p[3 + axis_index]) - 1) > 1e-9:
+                    continue
+                if radii is not None and not any(abs(p[6] - m(r)) < tol for r in radii):
+                    continue
+                if any(abs(p[6] - m(r)) < tol for r in exclude_radii):
+                    continue
+                out.append(f)
+        return out
+
     def fillet_edges(self, edges, r_mm, expected):
         """Állandó sugarú lekerekítés pontosan `expected` élen; eltérésnél hibát dob.
 
