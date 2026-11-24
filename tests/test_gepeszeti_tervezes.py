@@ -423,6 +423,21 @@ def test_mozgas_kepkockak_sets_view_once_and_crop_box(monkeypatch, tmp_path):
     assert mj.tartalom_doboz([str(a), str(b)], margo=5) == (5, 15, 75, 65)
 
 
+def test_szines_p2m_writes_colour_into_every_col(monkeypatch, tmp_path):
+    """RealView a .p2m színeit rajzolja: a másolatban minden col sor a kért szín, más nem változik."""
+    import sys as _sys
+    import types
+    monkeypatch.setitem(_sys.modules, "swk", types.SimpleNamespace(c0=None, sw=None))
+    mj = _load("megjelenes")
+    alap = tmp_path / "steel grey.p2m"
+    alap.write_bytes(b'"col1" .76 .7 .69\r\n"col2" .84 .84 .92\r\n"num_cols" 2\r\n"sw_shader" x\r\n')
+    out = mj.szines_p2m(str(alap), (90, 104, 58), mappa=str(tmp_path / "ki"))
+    assert out.endswith("steel grey_90_104_58.p2m")
+    sorok = open(out, encoding="latin-1", newline="").read().split("\r\n")
+    assert sorok[0] == '"col1" 0.352941 0.407843 0.227451' and sorok[1] == '"col2" 0.352941 0.407843 0.227451'
+    assert sorok[2:4] == ['"num_cols" 2', '"sw_shader" x']
+
+
 def test_set_driving_when_rebuild_is_property():
     """pywin32 a paraméter nélküli EditRebuild3-at néha property-ként adja (bool): nem hívható."""
     pytest.importorskip("win32com")

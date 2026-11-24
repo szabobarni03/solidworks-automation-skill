@@ -90,12 +90,38 @@ def lapok(doc, faces, mat, szin=None):
     _hozzaad(doc, mat, faces, szin)
 
 
+def szines_p2m(mat, rgb, mappa=None):
+    """A megjelenés másolata, amelyben minden szín ("col1", "col2" ...) az `rgb` (0..255).
+
+    Miért: a RealView a .p2m fájl színeit rajzolja, a COM-ból állított `PrimaryColor`-t és
+    `SecondaryColor`-t nem (élőben mérve: az autófesték egyedi színnel RealView alatt majdnem fekete
+    lett, a `color.p2m` világosszürke maradt). A `PrimaryColor` csak a RealView nélküli nézetre hat.
+    mappa: hova írja (alap: %LOCALAPPDATA%/gepeszeti-tervezes/p2m); a név az alapból és a színből
+    képzett, így ugyanaz a szín ugyanazt a fájlt kapja. A dokumentum a megjelenést beágyazza:
+    mentés után a fájl nélkül is ugyanaz a szín (élőben ellenőrizve), más gépre is vihető.
+    """
+    import re
+    r, g, b = (int(round(v)) for v in rgb)
+    mappa = mappa or os.path.join(os.environ.get("LOCALAPPDATA", os.path.expanduser("~")),
+                                  "gepeszeti-tervezes", "p2m")
+    os.makedirs(mappa, exist_ok=True)
+    forras = _p2m(mat)
+    out = os.path.join(mappa, f"{os.path.splitext(os.path.basename(forras))[0]}_{r}_{g}_{b}.p2m")
+    with open(forras, encoding="latin-1", newline="") as f:     # a CRLF sorvég marad
+        szoveg = f.read()
+    c = f"{r / 255:.6f} {g / 255:.6f} {b / 255:.6f}"
+    szoveg = re.sub(r'^("col\d+")[ \t][^\r\n]*', lambda m: f"{m.group(1)} {c}", szoveg, flags=re.M)
+    with open(out, "w", encoding="latin-1", newline="") as f:
+        f.write(szoveg)
+    return out
+
+
 def _hozzaad(doc, mat, entitasok, szin=None):
     import pythoncom
     from win32com.client import VARIANT
 
     ext = doc.Extension
-    rm = ext.CreateRenderMaterial(_p2m(mat))
+    rm = ext.CreateRenderMaterial(szines_p2m(mat, szin) if szin is not None else _p2m(mat))
     if rm is None:
         raise RuntimeError(f"Megjelenés nem tölthető: {mat}")
     if szin is not None:

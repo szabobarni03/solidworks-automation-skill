@@ -25,6 +25,17 @@ sem olyan". Ezt csak a korai, alkatrészenkénti összevetés szűri ki.
    - Festett test egyedi színnel: `megjelenes.alkatresz(doc, "painted/car/steel grey.p2m", szin=(R, G, B))`.
      A `painted/car/*` megjelenések átveszik a `PrimaryColor`-t, a `painted/powder coat/*` nem
      (élőben mérve: a porfesték fekete maradt).
+   - RealView alatt a `PrimaryColor` nem számít: a RealView a .p2m fájl `col1`/`col2` színét rajzolja,
+     ezért az autófesték egyedi színnel majdnem fekete lett. A `szin=` paraméter ezért a
+     `megjelenes.szines_p2m` másolatát tölti be (a fájlban is a kért szín), így RealView-val és
+     nélküle ugyanaz a szín látszik.
+   - RealView nem tanúsított (GeForce) kártyán: a SolidWorks a `HKCU\Software\SolidWorks\AllowList`
+     listája alapján kapcsolja ki. Két kulcs kell a kártya névelőtagjával (a `/PCIe/SSE2` nélkül):
+     `Gl2Shaders\NV40\<név>` (`Workarounds` = a tanúsított NVIDIA kártyák értéke ugyanott) és
+     `NVIDIA Corporation\<név>` (szintén a tanúsítottakéval azonos). Hatás: az `AllowList\Current`
+     `Workarounds` értéke a tanúsítottakéra vált. A kulcsot `reg.exe`-vel hozd létre: a PowerShell
+     registry-szolgáltatója a `/` jelnél alkulcsokra bontja a nevet. Nem hivatalos megoldás:
+     mentsd előbb a listát, és kérj engedélyt a felhasználótól.
    - Megmunkált lapok fémesen (furat, illesztett homlok, ahogy a műhelyrajzok 3D képein):
      `megjelenes.lapok(doc, part.plane_faces(...) + part.cylinder_faces(...), "metal/aluminum/polished aluminum.p2m")`.
      A sarok-lekerekítések hengeres lapjait az `exclude_radii` hagyja ki, így azok festettek maradnak.
