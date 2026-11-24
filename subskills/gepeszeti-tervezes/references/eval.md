@@ -27,3 +27,4 @@ rajzból (PDF/kép) induló kérés.
 
 | Dátum | Skill commit | Sikerarány | Megjegyzés |
 |---|---|---|---|
+| 2026-11-24 | a569b63 + mirror, loft, fillet_path, plane_pn (a commit előtt) | 10/10 | Regresszió-ellenőrzés: az eseteket egy szkript építette az aktuális `swk`-val, nem új munkamenet. A skill szabálykövetését ez nem méri, csak azt, hogy a régi függvények nem romlottak. |

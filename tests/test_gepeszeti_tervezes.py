@@ -598,3 +598,75 @@ def test_readme_pdf_html_has_table_and_embedded_small_image(tmp_path):
     h = rp.html_keszit(tmp_path / "README.md")
     assert "<table>" in h and "<title>Cím</title>" in h
     assert 'src="data:image/jpeg;base64,' in h and "kep.png" not in h
+
+
+def _sketch_fake(swk):
+    from types import SimpleNamespace as NS
+    vonal, iv = [], []
+    p = object.__new__(swk.Part)
+    p.sm = NS(CreateLine=lambda *a: vonal.append(a), CreateArc=lambda *a: iv.append(a))
+    return p, vonal, iv
+
+
+def test_fillet_path_arcs_are_tangent_and_turn_the_right_way():
+    """A `fillet_path` érintési pontjai t = r·tan(θ/2)-re vannak a csúcstól, az ívközéppont
+    mindkét szomszédos egyenestől r-re; balra fordulásnál pozitív (ccw) ív."""
+    pytest.importorskip("win32com")
+    swk = _load("swk")
+    p, vonal, iv = _sketch_fake(swk)
+    p.fillet_path([(0, 0), (100, 0), (100, 50), (150, 50)], 10)   # balra, aztán jobbra 90°
+    assert len(vonal) == 3 and len(iv) == 2
+    (c1x, c1y, _, a1x, a1y, _, b1x, b1y, _, d1), (c2x, c2y, _, *_r, d2) = iv
+    assert close((c1x, c1y, a1x, a1y, b1x, b1y), (0.09, 0.01, 0.09, 0, 0.1, 0.01), 1e-12)
+    assert d1 == 1 and d2 == -1
+    assert close((c2x, c2y), (0.11, 0.04), 1e-12)
+    assert close(vonal[1][:2], (0.1, 0.01), 1e-12) and close(vonal[1][3:5], (0.1, 0.04), 1e-12)
+
+
+def test_circle_hull_closes_with_outer_tangents():
+    pytest.importorskip("win32com")
+    swk = _load("swk")
+    p, vonal, iv = _sketch_fake(swk)
+    p.circle_hull([(0, 0), (40, 0), (20, 30)], 8)
+    assert len(vonal) == 3 and len(iv) == 3
+    for cx, cy, _, x1, y1, _, x2, y2, _, irany in iv:
+        assert irany == 1
+        assert abs(math.hypot(x1 - cx, y1 - cy) - 0.008) < 1e-12
+        assert abs(math.hypot(x2 - cx, y2 - cy) - 0.008) < 1e-12
+    assert close(vonal[0][:2], (0, -0.008), 1e-12)   # az alsó él kifelé, -y irányba tolva
+
+
+def _feature_fakes(swk, fm):
+    from types import SimpleNamespace as NS
+    jel = []
+
+    def feat(nev):
+        return NS(Name=nev, Select2=lambda app, mark: jel.append((nev, app, mark)) or True)
+
+    p = object.__new__(swk.Part)
+    p.name = "proba"
+    p.doc = NS(ClearSelection2=lambda b: None)
+    p.fm = fm
+    return p, feat, jel
+
+
+def test_mirror_marks_features_1_and_plane_2():
+    pytest.importorskip("win32com")
+    swk = _load("swk")
+    from types import SimpleNamespace as NS
+    hivas = []
+    p, feat, jel = _feature_fakes(swk, NS(InsertMirrorFeature2=lambda *a: hivas.append(a) or "tukor"))
+    assert p.mirror([feat("Fül"), feat("Fül2")], feat("Right")) == "tukor"
+    assert [(n, mk) for n, _, mk in jel] == [("Fül", 1), ("Fül2", 1), ("Right", 2)]
+    assert len(hivas[0]) == 5
+
+
+def test_loft_selects_profiles_in_order_with_mark_1():
+    pytest.importorskip("win32com")
+    swk = _load("swk")
+    from types import SimpleNamespace as NS
+    hivas = []
+    p, feat, jel = _feature_fakes(swk, NS(InsertProtrusionBlend2=lambda *a: hivas.append(a) or "loft"))
+    assert p.loft([feat("A"), feat("B")]) == "loft"
+    assert jel == [("A", False, 1), ("B", True, 1)]
+    assert len(hivas[0]) == 18 and hivas[0][14] is True     # merge

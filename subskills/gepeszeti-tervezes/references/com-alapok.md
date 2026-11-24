@@ -107,6 +107,27 @@ figyelembe kell venni.
 - **Sweep:** `Part.sweep(profil, pálya)`; `InsertProtrusionSwept4` 20 argumentummal. Profil 1-es,
   pálya 4-es jelölés. A profil síkja a pálya kezdőpontján legyen, arra merőlegesen. Csőhöz két
   koncentrikus kör a profil.
+- **Sweep pályája lekerekített töröttvonal:** `Sketch.fillet_path(pontok, r)`. A pontok a
+  lekerekítés nélküli csúcsok; az érintési pontokat és az ívközéppontot a függvény számolja
+  (t = r·tan(θ/2)), ezért nem kell `SketchFillet`. Hajlított lemeznél vagy huzalnál a pálya a
+  középvonal: a rajz külső kontúrját előbb a fél vastagsággal el kell tolni.
+- **Tükrözés:** `Part.mirror(feature-ök, sík)`; `InsertMirrorFeature2(False, False, False, False, 0)`.
+  A feature-ök 1-es, a sík 2-es jelöléssel. Két szimmetriasíkhoz kétszer: másodszor az eredeti és
+  az első tükörkép együtt.
+- **Loft:** `Part.loft([vázlat1, vázlat2, ...])`; `InsertProtrusionBlend2` 18 argumentummal,
+  profilok 1-es jelöléssel. A profilok párhuzamos síkokon, azonos körüljárással; ha a loft egy lap
+  helyéről indul, ott is külön vázlat kell.
+- **Ferde sík:** `Part.plane_pn(pont, normális)`: 3D vázlatban segédvonal a normális irányába, a sík
+  `InsertRefPlane(2, 0, 4, 0, 0, 0)`-val, a vonal 0-s, a kezdőpontja 1-es `Mark`-kal
+  (`SelectData`). Az ilyen sík vázlattengelyei nem kiszámíthatók: a pontokat a `to_sketch` (vagy
+  síkbeli u, w koordinátákhoz a `plane_map`) számolja át modellkoordinátából.
+- **Irány próbával:** az egyirányú kihúzás, a részleges forgatás és a vakvágás iránya az eltolt
+  síkon nem mindig a várt. Biztos megoldás: a feature közepén álló sík és `mid=True`. Ha ez nem
+  megy, a térfogat dönt: az egyik irány a vártat adja.
+- **Élletörés vágott háromszöggel:** ha az élletörés-feature nem fogja meg az élt, a letörés egy
+  háromszög vágása. A két befogót 1 mm-rel túl kell nyújtani (pl. 10-es letörésnél
+  `(x−sx, z−sz), (x+11sx, z−sz), (x−sx, z+11sz)`), így az átfogó pontosan a letörés vonalán marad.
+  Ha a háromszög a sarokpontból indul, az átfogó elcsúszik, és a térfogat 0,1–0,2%-kal eltér.
 - **Héj:** `Part.shell(lapok, vastagság)`. Az `InsertFeatureShell` semmit nem ad vissza: a sikert a
   feature-szám növekedése mutatja. A `GetFeatureCount` pywin32 alatt property is lehet: `c0`.
 - **Süllyesztett furat:** `Part.cbore_holes(sík, pontok, d, D, mélység)`: két vágás egy

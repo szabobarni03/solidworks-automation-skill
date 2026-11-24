@@ -2,6 +2,14 @@
 
 ## Elhelyezés transzformmal (rögzített komponensek)
 
+- **Kapott alkatrészekből, illesztés nélkül:** a furattengelyeket és felfekvő síkokat az alkatrész
+  geometriájából olvasd ki (hengeres lapok `CylinderParams`, sík lapok `PlaneParams`), a
+  helyzetet (R, t) számold. Ha a feladat válasza a súlypont, az ellenőrzés
+  `Extension.CreateMassProperty().CenterOfMass` (`c0`-val), a tűrés a válasz kerekítésének
+  0,6-szorosa. Az R sorai a helyi tengelyek képei a világban (p' = p·R + t). Egy szög vagy egy
+  hiányzó méret a súlypontból visszaszámolható; ha a lap szögével a súlypont kicsit kívül esik,
+  az eltérést dokumentáld, ne igazítsd a modellt csendben.
+
 - Sorvektor-konvenció: `p' = p·R + t`. Az R sorai a lokális X, Y, Z tengely képei világkoordinátában.
 - A `Transform2.ArrayData` 16 elemű: 9 forgatás, 3 eltolás méterben, a skála (1), majd 0, 0, 0.
   Ezt adja a `transzform.transform_data(R, t_mm)`, a SolidWorks felé a `create_math_transform(sw, data)`.

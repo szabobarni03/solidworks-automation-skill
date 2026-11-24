@@ -191,6 +191,60 @@ class Part:
         self.ref_geom.append(p)
         return p
 
+    def plane_pn(self, p, n, name=None):
+        """Sík a `p` ponton át (mm), `n` normálissal: ferde síkokhoz (szögben álló fül, ferde furat).
+
+        Egy 3D vázlatban `p`-ből `n` irányú segédvonal készül, a sík erre merőleges és átmegy a
+        kezdőpontján (InsertRefPlane: merőleges 2 + egybeeső 4). A vázlat x/y iránya ilyen síkon a
+        SolidWorks döntése: a vázlatba modellkoordinátából a `to_sketch` számol át.
+        """
+        L = math.sqrt(sum(c * c for c in n))
+        q = [p[i] + 10 * n[i] / L for i in range(3)]
+        self.doc.ClearSelection2(True)
+        self.sm.Insert3DSketch(True)
+        ln = self.sm.CreateLine(m(p[0]), m(p[1]), m(p[2]), m(q[0]), m(q[1]), m(q[2]))
+        self.sm.Insert3DSketch(True)
+        vazlat = self.doc.FeatureByPositionReverse(0)
+        self.doc.ClearSelection2(True)
+        sm = self.doc.SelectionManager
+        d0, d1 = c0(sm, "CreateSelectData"), c0(sm, "CreateSelectData")
+        d0.Mark, d1.Mark = 0, 1            # az InsertRefPlane a hivatkozásokat Mark szerint olvassa
+        ln.Select4(False, d0)
+        c0(ln, "GetStartPoint2").Select4(True, d1)
+        pl = self.fm.InsertRefPlane(2, 0, 4, 0, 0, 0)
+        self.doc.ClearSelection2(True)
+        if pl is None:
+            raise RuntimeError(f"{self.name}: sík (pont + normális) sikertelen")
+        if name:
+            pl.Name = name
+        vazlat.Select2(False, 0)
+        c0(self.doc, "BlankSketch")
+        self.doc.ClearSelection2(True)
+        self.ref_geom.append(pl)
+        return pl
+
+    def to_sketch(self, x, y, z=0.0):
+        """Modellpont (mm) -> az éppen nyitott vázlat (x, y) koordinátái (mm). Rajzoló függvényben
+        használd ferde vagy eltolt síkon, ahol a vázlattengelyek iránya nem nyilvánvaló."""
+        tr = c0(self.sm.ActiveSketch, "ModelToSketchTransform")
+        mu = c0(sw(), "GetMathUtility")
+        if hasattr(mu, "_FlagAsMethod"):
+            mu._FlagAsMethod("CreatePoint")
+        pt = mu.CreatePoint(VARIANT(pythoncom.VT_ARRAY | pythoncom.VT_R8, [m(x), m(y), m(z)]))
+        d = c0(pt.MultiplyTransform(tr), "ArrayData")
+        return d[0] * 1000.0, d[1] * 1000.0
+
+    def plane_map(self, o, U, W):
+        """Síkbeli (u, w) koordináta -> vázlat (x, y), a nyitott vázlatban. o: a sík egy pontja,
+        U és W: két merőleges egységvektor a síkban (modell, mm). Visszaad (f, ccw): f(u, w) a
+        vázlatpont, ccw pedig az `arc` irányjelzője, ami (u, w)-ben pozitív körüljárást ad (a
+        vázlat tükrözve is állhat a síkhoz képest)."""
+        def f(u, w):
+            return self.to_sketch(*[o[i] + u * U[i] + w * W[i] for i in range(3)])
+        a, b, c = f(0, 0), f(1, 0), f(0, 1)
+        ccw = (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]) > 0
+        return f, ccw
+
     def axis(self, p1, p2, name):
         """Referenciatengely két sík metszeteként."""
         self.doc.ClearSelection2(True)
@@ -305,6 +359,34 @@ class Part:
         """Hatszög csúcskör-átmérővel, csúcs a +x tengelyen (préscsap: csúcs = furat + túlfedés)."""
         self.sm.CreatePolygon(m(x), m(y), 0, m(x + d_corner / 2), m(y), 0, 6, False)
 
+    def fillet_path(self, pts, r):
+        """Nyitott töröttvonal a belső csúcsokban r sugarú érintő ívekkel (sweep pályája, hajlított
+        lemez vagy huzal középvonala). A csúcsok a lekerekítés nélküli metszéspontok; az ív a
+        vázlatban számolt érintési pontok közé kerül, így nem kell SketchFillet."""
+        n = len(pts)
+        ki = [pts[0]]                         # szakaszonként a kezdő- és végpont
+        ivek = []
+        for i in range(1, n - 1):
+            (x0, y0), (x1, y1), (x2, y2) = pts[i - 1], pts[i], pts[i + 1]
+            l1, l2 = math.hypot(x1 - x0, y1 - y0), math.hypot(x2 - x1, y2 - y1)
+            u = ((x1 - x0) / l1, (y1 - y0) / l1)
+            v = ((x2 - x1) / l2, (y2 - y1) / l2)
+            kereszt = u[0] * v[1] - u[1] * v[0]
+            th = abs(math.atan2(kereszt, u[0] * v[0] + u[1] * v[1]))
+            t = r * math.tan(th / 2)
+            a = (x1 - u[0] * t, y1 - u[1] * t)
+            b = (x1 + v[0] * t, y1 + v[1] * t)
+            sg = 1 if kereszt > 0 else -1     # balra fordul: a középpont a bal oldalon
+            c = (a[0] - u[1] * r * sg, a[1] + u[0] * r * sg)
+            ki.append(a)
+            ivek.append((c, a, b, kereszt > 0))
+            ki.append(b)
+        ki.append(pts[-1])
+        for i in range(0, len(ki), 2):
+            self.line(*ki[i], *ki[i + 1])
+        for c, a, b, ccw in ivek:
+            self.arc(*c, *a, *b, ccw=ccw)
+
     def slot(self, x1, y1, x2, y2, w):
         """Egyenes hosszú horony (két félkör végű): a két ívközéppont (x1, y1) és (x2, y2), szélesség w.
         A teljes hossz = a középpontok távolsága + w."""
@@ -315,6 +397,23 @@ class Part:
         self.arc(x2, y2, x2 + nx, y2 + ny, x2 - nx, y2 - ny, ccw=False)
         self.line(x2 - nx, y2 - ny, x1 - nx, y1 - ny)
         self.arc(x1, y1, x1 - nx, y1 - ny, x1 + nx, y1 + ny, ccw=False)
+
+    def circle_hull(self, centers, r):
+        """Egyforma sugarú körök konvex burka (fülekkel lekerekített sokszög, pl. háromszög alakú
+        talp a furatok körül). centers: a középpontok pozitív (óramutatóval ellentétes) sorrendben,
+        konvex sokszöget alkotva; a köríveket a szomszédos élek külső érintői zárják."""
+        n = len(centers)
+        ki = []                                   # élenként a két érintési pont
+        for i in range(n):
+            (x1, y1), (x2, y2) = centers[i], centers[(i + 1) % n]
+            L = math.hypot(x2 - x1, y2 - y1)
+            nx, ny = (y2 - y1) / L * r, -(x2 - x1) / L * r     # kifelé mutató normális
+            ki.append(((x1 + nx, y1 + ny), (x2 + nx, y2 + ny)))
+        for i in range(n):
+            a, b = ki[i]
+            self.line(*a, *b)
+            c = centers[(i + 1) % n]
+            self.arc(c[0], c[1], *b, *ki[(i + 1) % n][0], ccw=True)
 
     def rrect(self, cx, cy, w, h, r):
         x0, x1, y0, y1 = cx - w / 2, cx + w / 2, cy - h / 2, cy + h / 2
@@ -403,6 +502,38 @@ class Part:
             raise RuntimeError(f"{self.name}: lineáris minta sikertelen")
         return f
 
+    def mirror(self, features, plane):
+        """Feature-ök tükrözése síkra (`InsertMirrorFeature2`): a feature-ök 1-es, a sík (referenciasík
+        vagy sík lap) 2-es jelöléssel kerül a kijelölésbe. Kettős tükrözéshez (két szimmetriasík)
+        hívd kétszer: másodszor az eredeti és az első tükörkép feature-ökkel."""
+        self.doc.ClearSelection2(True)
+        for f in features:
+            if not f.Select2(True, 1):
+                raise RuntimeError(f"{self.name}: a tükrözendő feature nem jelölhető ki: {f.Name}")
+        if not plane.Select2(True, 2):
+            raise RuntimeError(f"{self.name}: a tükörsík nem jelölhető ki")
+        f = self.fm.InsertMirrorFeature2(False, False, False, False, 0)
+        self.doc.ClearSelection2(True)
+        if f is None:
+            raise RuntimeError(f"{self.name}: tükrözés sikertelen")
+        return f
+
+    def loft(self, profiles, merge=True):
+        """Loft (átmenet) a `profiles` vázlatok között, a lista sorrendjében
+        (`InsertProtrusionBlend2`, profilok 1-es jelöléssel). A profilokat egymással szemben álló,
+        párhuzamos síkokra rajzold, a sarkokat azonos körüljárással, mert a loft a vázlatpontokat
+        a kijelölés helye szerint párosítja. Sík lapra futó loftnál a lap helyén is vázlat legyen."""
+        self.doc.ClearSelection2(True)
+        for i, pr in enumerate(profiles):
+            if not pr.Select2(i > 0, 1):
+                raise RuntimeError(f"{self.name}: a loft profilja nem jelölhető ki")
+        f = self.fm.InsertProtrusionBlend2(False, True, False, 1.0, 0, 0, 1.0, 1.0, True, True,
+                                           False, 0.0, 0.0, 0, merge, True, True, 0)
+        self.doc.ClearSelection2(True)
+        if f is None:
+            raise RuntimeError(f"{self.name}: loft sikertelen")
+        return f
+
     def sweep(self, profile, path):
         """Sweep (kihúzás pálya mentén): `profile` zárt vázlat (pl. két koncentrikus kör = cső),
         `path` nyitott vázlat (egyenesek és érintő ívek). A profil síkja a pálya kezdőpontján legyen,
@@ -418,8 +549,9 @@ class Part:
             raise RuntimeError(f"{self.name}: sweep sikertelen")
         return f
 
-    def shell(self, faces, thickness_mm):
-        """Héj (Shell): a `faces` lapok nyitva maradnak, a falvastagság befelé `thickness_mm`.
+    def shell(self, faces, thickness_mm, outward=False):
+        """Héj (Shell): a `faces` lapok nyitva maradnak, a falvastagság befelé `thickness_mm`
+        (outward=True: kifelé; akkor a modell méretei a belső méretek).
         A lapokat geometriából keresd (`plane_faces`), ne koordinátás kijelöléssel.
         Az `InsertFeatureShell` nem ad vissza semmit: a létrejöttét a fa utolsó eleme mutatja."""
         self.doc.ClearSelection2(True)
@@ -427,7 +559,7 @@ class Part:
         if sum(1 for f in faces if f.Select4(True, sel)) != len(faces):
             raise RuntimeError(f"{self.name}: héj lapjai nem jelölhetők ki")
         n0 = c0(self.doc, "GetFeatureCount")
-        self.doc.InsertFeatureShell(m(thickness_mm), False)
+        self.doc.InsertFeatureShell(m(thickness_mm), outward)
         self.doc.ClearSelection2(True)
         if c0(self.doc, "GetFeatureCount") <= n0:
             raise RuntimeError(f"{self.name}: héj sikertelen")
@@ -494,8 +626,11 @@ class Part:
             self.doc.ForceRebuild3(False)
         return meret
 
-    def revolve(self, cut=False):
-        f = self.fm.FeatureRevolve2(True, True, False, cut, False, False, 0, 0, 2 * math.pi, 0,
+    def revolve(self, cut=False, angle_deg=360.0, reverse=False, mid=False):
+        """Forgatás a vázlat középvonala körül. angle_deg < 360: részleges (reverse: a másik
+        irányba, mid: a vázlatsíktól szimmetrikusan, swEndCondMidPlane = 6)."""
+        f = self.fm.FeatureRevolve2(True, True, False, cut, reverse, False, 6 if mid else 0, 0,
+                                    math.radians(angle_deg), 0,
                                     False, False, 0, 0, 0, 0, 0, True, True, True)
         if f is None:
             raise RuntimeError(f"{self.name}: forgatás sikertelen")
@@ -541,6 +676,45 @@ class Part:
                     continue
                 if any(abs(p[0] - x) < tol and abs(p[1] - y) < tol for x, y in cel):
                     edges.append(edge)
+        return edges
+
+    def line_edges(self, axis_index, pts_mm, tol_mm=0.01):
+        """Egyenes élek a megadott tengely irányában (0 = X, 1 = Y, 2 = Z), a megadott pontokon át.
+
+        pts_mm: a másik két koordináta párjai növekvő tengelysorrendben (X tengelynél (y, z),
+        Y-nál (x, z), Z-nél (x, y)). A `corner_edges` általánosítása, például egy alulról
+        kimart lépcső belső élének lekerekítéséhez.
+        """
+        tol = m(tol_mm)
+        masik = [i for i in range(3) if i != axis_index]
+        cel = [(m(a), m(b)) for a, b in pts_mm]
+        edges = []
+        for body in self.doc.GetBodies2(0, True) or []:
+            for edge in c0(body, "GetEdges") or []:
+                curve = c0(edge, "GetCurve")
+                if not c0(curve, "IsLine"):
+                    continue
+                p = curve.LineParams          # rootx, rooty, rootz, dirx, diry, dirz
+                if any(abs(p[3 + i]) > 1e-9 for i in masik):
+                    continue
+                if any(abs(p[masik[0]] - a) < tol and abs(p[masik[1]] - b) < tol for a, b in cel):
+                    edges.append(edge)
+        return edges
+
+    def edges_at(self, pts_mm, tol_mm=0.01):
+        """Élek (bármilyen görbe), amelyek a megadott modellpontok (mm) valamelyikén átmennek.
+        Ferde éleknél, metszésgörbéknél, ahol a tengelyirányú keresők (`corner_edges`,
+        `line_edges`) nem használhatók. Élenként egy pont elég, a végpontok helyett a közepéből."""
+        tol = m(tol_mm)
+        cel = [tuple(m(v) for v in p) for p in pts_mm]
+        edges = []
+        for body in self.doc.GetBodies2(0, True) or []:
+            for edge in c0(body, "GetEdges") or []:
+                for p in cel:
+                    q = edge.GetClosestPointOn(*p)
+                    if q and math.dist(p, q[:3]) < tol:
+                        edges.append(edge)
+                        break
         return edges
 
     def plane_edges(self, axis_index, value_mm, circle_radii=None, tol_mm=0.01):
