@@ -98,3 +98,32 @@ figyelembe kell venni.
   Csúcskör-átmérőhöz (d) a pont d/2-re kell: `Part.hexagon_corner(x, y, d)`.
 - Ellenőrzés: a befoglaló méret egyik iránya s, a másik 2s/√3 (10-es kulcsnál 10 és 11,55).
   Ha mindkettő kisebb, a hatszög alulméretes; ezt a tömeg-ellenőrzés is jelzi.
+
+## Minta, sweep, héj, lemez (élőben kipróbálva, SW 2026)
+
+- **Lineáris minta:** `Part.linear_pattern(feature-ök, irány, db, osztás)`; `FeatureLinearPattern5`
+  22 argumentummal. Kijelölés: a minta feature-ök 4-es, az irány (referenciatengely vagy egyenes él)
+  1-es jelöléssel. A darabszámot a hosszból és az osztásból számold, ne rögzítsd.
+- **Sweep:** `Part.sweep(profil, pálya)`; `InsertProtrusionSwept4` 20 argumentummal. Profil 1-es,
+  pálya 4-es jelölés. A profil síkja a pálya kezdőpontján legyen, arra merőlegesen. Csőhöz két
+  koncentrikus kör a profil.
+- **Héj:** `Part.shell(lapok, vastagság)`. Az `InsertFeatureShell` semmit nem ad vissza: a sikert a
+  feature-szám növekedése mutatja. A `GetFeatureCount` pywin32 alatt property is lehet: `c0`.
+- **Süllyesztett furat:** `Part.cbore_holes(sík, pontok, d, D, mélység)`: két vágás egy
+  pontlistából. A vakvágás az alap iránnyal (`reverse=False`) megy az anyagba a felső lap síkjáról.
+- **Hosszú horony:** `Part.slot(x1, y1, x2, y2, szélesség)`: két egyenes és két félkör (`ccw=False`).
+- **Lemezalkatrész alapperem:** az `InsertSheetMetalBaseFlange2` elavult, SW 2026-ban `None`-t ad
+  bármilyen argumentummal; `None` a `CustomBendAllowance` helyén "Type mismatch". Helyette
+  `fm.CreateDefinition(34)` (swFmBaseFlange) + `CreateFeature(adat)`, a nyitott vázlat kijelölve.
+  Ez a `Part.sheet_metal_base_flange`.
+- **K-tényező:** sem az alapperem adatán (`KFactor`, `OverrideKFactor`), sem a Sheet-Metal feature
+  adatán (`SetCustomBendAllowance` + `ModifyDefinition`) nem hat: a beállítás csendben elvész, vagy
+  tárolódik, de a kiterítés nem változik. Ami hat: minden `SketchBend` alfeature definíciója,
+  `AccessSelections(doc, nv())`, `UseDefaultBendAllowance = False`, `GetCustomBendAllowance` (Type 2,
+  KFactor), `SetCustomBendAllowance`, `ModifyDefinition(adat, doc, nv())`. Az `UseDefaultBendRadius`
+  maradjon igaz, különben a sugár elállítódik.
+- **Ellenőrzés:** a kiterített hossz (`Part.flat_size()`, a FlatPattern feature feloldásával) a
+  K-tényezőtől függ, a formázott test térfogata nem. Ezért a K-tényezőt a kiterített hosszal kell
+  ellenőrizni: L = a + b − BD, BD = 2 (r + t) tan(φ/2) − φ (r + K t).
+- `AccessSelections` és `ModifyDefinition` harmadik (callout) paramétere `None` helyett `nv()`
+  (VT_DISPATCH null), különben "Type mismatch".

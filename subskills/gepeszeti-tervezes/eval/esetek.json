@@ -94,6 +94,45 @@
      60
     ]
    }
+  },
+  {
+   "id": "nyitott_doboz",
+   "keres": "Nyitott tetejű doboz: külső méret 80 x 60 x 40 mm, a falak és a fenék 3 mm vastagok.",
+   "elvart": {
+    "testek": 1,
+    "terfogat_mm3": 44148.0,
+    "meret_mm": [
+     40,
+     60,
+     80
+    ]
+   }
+  },
+  {
+   "id": "reteszhornyos_tengely",
+   "keres": "Tengely: átmérő 30 mm, hossz 60 mm. A palástján a tengellyel párhuzamos, 8 mm széles, 4 mm mély, 40 mm hosszú, egyenes végű reteszhorony, a tengely hosszának közepén.",
+   "elvart": {
+    "testek": 1,
+    "terfogat_mm3": 41189.0,
+    "meret_mm": [
+     30,
+     30,
+     60
+    ]
+   }
+  },
+  {
+   "id": "lemez_konzol",
+   "keres": "Lemezalkatrész L-konzol: 2 mm vastag lemez, a szárak külső mérete 40 és 30 mm, a szélesség 25 mm, a belső hajlítási sugár 2 mm, K-tényező 0,4. A kiterített hossz 66,40 mm legyen.",
+   "elvart": {
+    "testek": 1,
+    "terfogat_mm3": 3335.6,
+    "meret_mm": [
+     25,
+     30,
+     40
+    ]
+   }
   }
  ]
 }

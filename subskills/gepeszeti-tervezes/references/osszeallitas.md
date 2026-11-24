@@ -98,3 +98,22 @@
   tengely). A vágósík a furat tengelyén menjen át. A darabszám nem mutatja, hol az átfedés; a metszet igen.
 - Csavar iránya: ellenőrizd, hogy a fej kívül van. A fordított csavar a fejével a lemezbe lóg, és
   ugyanolyan darabszámú, de nagyobb térfogatú átfedést ad.
+
+## Könyvtári összeállítások: fogaskerékpár, illesztés, darabjegyzék
+
+- **Fogaskerékpár transzformmal:** a `fogaskerek.fogprofil(m, z)` a 0. fogat a +X tengelyre teszi.
+  A második kerék az `a = m (z1 + z2) / 2` tengelytávon, π / z2 szöggel elforgatva: így fogárok néz
+  az első kerék foga felé. Kapcsolódás-ellenőrzés: az első kerék δ szögénél a második −δ z1 / z2
+  szöggel fordul, és minden helyzetben 0 ütközés. A vizsgálat érzékenységét rossz fázissal
+  (elforgatás nélkül) egyszer próbáld ki: ott ütközést kell adnia (élőben: 3 ütközés).
+- **Illesztés tűréshatárokon:** a tengelyt és a furatot mindkét határméretén külön alkatrészként
+  modellezd (pl. 20 h6: 20,000 és 19,987). A játékot a geometriából olvasd (a hengeres lapok
+  sugara, `CylinderParams[6]`), ne a szkript konstansából. A 0 játékú (érintkező) pár ütközés-
+  vizsgálata 0-t ad: az egybeeső lapok érintkezésnek számítanak.
+- **Összeállítás térfogata:** az összeállításon nincs `GetBodies2`, a `part_report` hibát ad.
+  Helyette `c0(doc.Extension, "CreateMassProperty").Volume`.
+- **Darabjegyzék-ellenőrzés:** a felső szintű komponensek (`GetComponents(True)`) darabszáma
+  fájlnév (`GetPathName`) szerint: sorok száma és összes darab a várttal.
+- **Csuklós kapcsolat lengése:** a mozgó részt `Transform2`-vel a tengely körül elforgatott helyzetbe
+  tedd, `EditRebuild3`, és olvasd vissza a helyzetét. Ha az illesztés ellentmond, a SolidWorks
+  visszaállítja, ezt a visszaolvasás elkapja.

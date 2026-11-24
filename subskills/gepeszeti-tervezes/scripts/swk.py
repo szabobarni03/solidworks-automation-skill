@@ -256,14 +256,17 @@ class Part:
         return f[0]
 
     def sketch(self, plane, draw):
-        """Vázlat a síkon; draw(self) rajzol. Utána a vázlat ki van jelölve a következő feature-höz."""
+        """Vázlat a síkon; draw(self) rajzol. Utána a vázlat ki van jelölve a következő feature-höz.
+        Visszaadja a vázlat feature-t (sweephez profil és pálya)."""
         self.doc.ClearSelection2(True)
         plane.Select2(False, 0)
         self.sm.InsertSketch(True)
         draw(self)
         self.sm.InsertSketch(True)
         self.doc.ClearSelection2(True)
-        self.doc.FeatureByPositionReverse(0).Select2(False, 0)
+        f = self.doc.FeatureByPositionReverse(0)
+        f.Select2(False, 0)
+        return f
 
     # --- vázlatelemek (mm) ---------------------------------------------------
     def line(self, x1, y1, x2, y2):
@@ -301,6 +304,17 @@ class Part:
     def hexagon_corner(self, x, y, d_corner):
         """Hatszög csúcskör-átmérővel, csúcs a +x tengelyen (préscsap: csúcs = furat + túlfedés)."""
         self.sm.CreatePolygon(m(x), m(y), 0, m(x + d_corner / 2), m(y), 0, 6, False)
+
+    def slot(self, x1, y1, x2, y2, w):
+        """Egyenes hosszú horony (két félkör végű): a két ívközéppont (x1, y1) és (x2, y2), szélesség w.
+        A teljes hossz = a középpontok távolsága + w."""
+        dx, dy = x2 - x1, y2 - y1
+        L = math.hypot(dx, dy)
+        nx, ny = -dy / L * w / 2, dx / L * w / 2          # normális félszélességnyi hosszal
+        self.line(x1 + nx, y1 + ny, x2 + nx, y2 + ny)
+        self.arc(x2, y2, x2 + nx, y2 + ny, x2 - nx, y2 - ny, ccw=False)
+        self.line(x2 - nx, y2 - ny, x1 - nx, y1 - ny)
+        self.arc(x1, y1, x1 - nx, y1 - ny, x1 + nx, y1 + ny, ccw=False)
 
     def rrect(self, cx, cy, w, h, r):
         x0, x1, y0, y1 = cx - w / 2, cx + w / 2, cy - h / 2, cy + h / 2
@@ -354,6 +368,131 @@ class Part:
         if f is None:
             raise RuntimeError(f"{self.name}: körminta sikertelen")
         return f
+
+    def cbore_holes(self, face_plane, points, d_mm, cbore_d_mm, cbore_depth_mm, reverse=False):
+        """Süllyesztett furatok egy furatlistából: Ø d átmenő furat és Ø cbore_d x cbore_depth
+        süllyesztés a `face_plane` síkjáról (a lap síkja, pl. `plane(front, vastagság)`).
+        Egy pontlista hajtja mindkét vágást, így a furat és a süllyesztése nem válik el egymástól.
+        A süllyesztés vakvágása az alap iránnyal (reverse=False) megy az anyagba a felső lap
+        síkjáról (élőben ellenőrizve); reverse=True kifelé vágna, és a vágás sikertelen.
+        A Hole Wizard (`HoleWizard5`) helyett: annak Value1..12 paraméterei furattípusonként mást
+        jelentenek, és saját vázlatpontot kér."""
+        self.sketch(face_plane, lambda s: [s.circle(x, y, d_mm) for x, y in points])
+        a = self.cut()
+        self.sketch(face_plane, lambda s: [s.circle(x, y, cbore_d_mm) for x, y in points])
+        b = self.cut(cbore_depth_mm, mid=False, reverse=reverse)
+        return a, b
+
+    def linear_pattern(self, features, direction, count, spacing_mm, flip=False):
+        """Lineáris minta: a `features` `count` példányban, `spacing_mm` osztással a `direction`
+        mentén (referenciatengely vagy egyenes él). A feature-ök 4-es, az irány 1-es jelöléssel
+        kerül a kijelölésbe (`FeatureLinearPattern5`). Ha a minta a test mellé kerülne (rossz irány),
+        flip=True. A darabszámot az osztásból és a hosszból számold, ne rögzítsd.
+        """
+        self.doc.ClearSelection2(True)
+        for f in features:
+            if not f.Select2(True, 4):
+                raise RuntimeError(f"{self.name}: a minta feature nem jelölhető ki: {f.Name}")
+        if not direction.Select2(True, 1):
+            raise RuntimeError(f"{self.name}: a minta iránya nem jelölhető ki")
+        f = self.fm.FeatureLinearPattern5(int(count), m(spacing_mm), 1, 0.0, flip, False, "", "",
+                                          False, False, False, False, False, False, False, False,
+                                          False, False, 0.0, 0.0, False, False)
+        self.doc.ClearSelection2(True)
+        if f is None:
+            raise RuntimeError(f"{self.name}: lineáris minta sikertelen")
+        return f
+
+    def sweep(self, profile, path):
+        """Sweep (kihúzás pálya mentén): `profile` zárt vázlat (pl. két koncentrikus kör = cső),
+        `path` nyitott vázlat (egyenesek és érintő ívek). A profil síkja a pálya kezdőpontján legyen,
+        a pályára merőlegesen. Kijelölés: profil 1-es, pálya 4-es jelöléssel
+        (`InsertProtrusionSwept4`)."""
+        self.doc.ClearSelection2(True)
+        if not (profile.Select2(False, 1) and path.Select2(True, 4)):
+            raise RuntimeError(f"{self.name}: sweep profil/pálya nem jelölhető ki")
+        f = self.fm.InsertProtrusionSwept4(False, False, 0, False, False, 0, 0, False, 0.0, 0.0, 0, 0,
+                                           True, True, True, 0.0, True, False, 0.0, 0)
+        self.doc.ClearSelection2(True)
+        if f is None:
+            raise RuntimeError(f"{self.name}: sweep sikertelen")
+        return f
+
+    def shell(self, faces, thickness_mm):
+        """Héj (Shell): a `faces` lapok nyitva maradnak, a falvastagság befelé `thickness_mm`.
+        A lapokat geometriából keresd (`plane_faces`), ne koordinátás kijelöléssel.
+        Az `InsertFeatureShell` nem ad vissza semmit: a létrejöttét a fa utolsó eleme mutatja."""
+        self.doc.ClearSelection2(True)
+        sel = c0(self.doc.SelectionManager, "CreateSelectData")
+        if sum(1 for f in faces if f.Select4(True, sel)) != len(faces):
+            raise RuntimeError(f"{self.name}: héj lapjai nem jelölhetők ki")
+        n0 = c0(self.doc, "GetFeatureCount")
+        self.doc.InsertFeatureShell(m(thickness_mm), False)
+        self.doc.ClearSelection2(True)
+        if c0(self.doc, "GetFeatureCount") <= n0:
+            raise RuntimeError(f"{self.name}: héj sikertelen")
+        return self.doc.FeatureByPositionReverse(0)
+
+    def sheet_metal_base_flange(self, sketch, thickness_mm, radius_mm, depth_mm, k_factor, flip_thicken=False):
+        """Lemezalkatrész alapperem nyitott vázlatból (pl. L-profil a külső mérettel). A vázlat
+        vonala a lemez egyik oldala; flip_thicken a SW alapértelmezett vastagítási oldalát fordítja
+        (az origóba futó L-vázlatnál az alap befelé vastagít, a vázlat így a külső méret). radius_mm: belső hajlítási sugár, depth_mm: a lemez szélessége
+        (vakon, a vázlatsík egyik oldalára). Ellenőrzés: `flat_size()`.
+
+        Az `InsertSheetMetalBaseFlange2` elavult, SW 2026-ban None-t ad: helyette
+        `CreateDefinition(swFmBaseFlange = 34)` + `CreateFeature`. A K-tényezőt sem az alapperem,
+        sem a Sheet-Metal feature adata nem veszi át (a beállítás csendben elveszik, vagy tárolódik,
+        de a kiterítés nem változik). Ami hat: a hajlítás-alfeature-ök (`SketchBend`) definíciója,
+        `UseDefaultBendAllowance = False` + `SetCustomBendAllowance` + `ModifyDefinition`."""
+        self.doc.ClearSelection2(True)
+        data = self.fm.CreateDefinition(34)          # swFmBaseFlange
+        data.Thickness = m(thickness_mm)
+        data.BendRadius = m(radius_mm)
+        data.D1EndConditionType = 0                  # swEndCondBlind
+        data.D1EndConditionDistance = m(depth_mm)
+        if flip_thicken:                             # a SW alapértelmezett oldalához képest
+            data.ReverseThickness = not data.ReverseThickness
+        sketch.Select2(False, 0)
+        f = self.fm.CreateFeature(data)
+        self.doc.ClearSelection2(True)
+        if f is None:
+            raise RuntimeError(f"{self.name}: lemez alapperem sikertelen")
+        sub = c0(f, "GetFirstSubFeature")
+        while sub is not None:
+            if c0(sub, "GetTypeName2") == "SketchBend":
+                od = c0(sub, "GetDefinition")
+                od.AccessSelections(self.doc, nv())
+                od.UseDefaultBendAllowance = False
+                ba = c0(od, "GetCustomBendAllowance")
+                ba.Type = 2                          # swBendAllowanceKFactor
+                ba.KFactor = k_factor
+                od.SetCustomBendAllowance(ba)
+                if not sub.ModifyDefinition(od, self.doc, nv()):
+                    raise RuntimeError(f"{self.name}: K-tényező beállítása sikertelen ({sub.Name})")
+            sub = c0(sub, "GetNextSubFeature")
+        self.doc.ForceRebuild3(False)
+        return f
+
+    def flat_size(self):
+        """A lemezalkatrész kiterített befoglaló mérete (mm, nagyság szerint rendezve): a
+        `Flat-Pattern` (FlatPattern típusú) feature elnyomását feloldja, méri, majd visszanyomja."""
+        fp = None
+        f = c0(self.doc, "FirstFeature")
+        while f is not None:
+            if c0(f, "GetTypeName2") == "FlatPattern":
+                fp = f
+            f = c0(f, "GetNextFeature")
+        if fp is None:
+            raise RuntimeError(f"{self.name}: nincs kiterítés (FlatPattern) feature")
+        fp.SetSuppression2(1, 2, None)   # feloldás (swUnSuppressFeature), ebben a konfigurációban
+        self.doc.ForceRebuild3(False)
+        try:
+            b = self.doc.GetBodies2(0, True)[0].GetBodyBox()
+            meret = sorted(round((b[3 + i] - b[i]) * 1000, 3) for i in range(3))
+        finally:
+            fp.SetSuppression2(0, 2, None)
+            self.doc.ForceRebuild3(False)
+        return meret
 
     def revolve(self, cut=False):
         f = self.fm.FeatureRevolve2(True, True, False, cut, False, False, 0, 0, 2 * math.pi, 0,

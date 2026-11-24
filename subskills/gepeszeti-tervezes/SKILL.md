@@ -35,7 +35,8 @@ Ez a subskill a munkamódszert, a valódi projektekben bevált megoldásokat és
 4. **Ellenőrzés.** Kötelező lista lent. Eredmények JSON-ba és képbe (`scripts/ellenorzes.py`).
 5. **Rajz.** `scripts/rajz.py`; a buktatók és a bevált sorrend: [rajz.md](references/rajz.md).
 6. **Csomagolás.** Átadási mappa: nyomtatási STL, semleges STEP, összeállítás STEP, képek,
-   README a címzett nyelvén (miért jó a konstrukció, méretek forrása, mérendő tételek).
+   README a címzett nyelvén (miért jó a konstrukció, méretek forrása, mérendő tételek), PDF-ben is
+   (`scripts/readme_pdf.py`), hogy böngészőben és bárhol megnyíljon.
 7. **Lezárás.** Tanulságok beépítése a skillbe: [tanulsag-sablon.md](references/tanulsag-sablon.md).
 
 ## Kötelező ellenőrzőlista (átadás előtt)
@@ -64,7 +65,7 @@ Teljes lista és a tipikus hamis eredmények: [ellenorzes.md](references/ellenor
 | Fájl | Tartalom |
 |---|---|
 | `scripts/transzform.py` | Forgatás/eltolás mátrixok, `transform_data()` a `create_math_transform`-hoz. Tiszta Python, tesztelt. |
-| `scripts/swk.py` | `c0`, `m`, `nv`, `byref_int`, `sw`, `open_doc`, `props`, `std_planes`, `set_material` (angol anyagnév a nyelvi anyagkönyvtárra fordítva); `Part` (vázlat, kihúzás, vágás, forgatás, ref. sík (`flip` a másik oldalra)/tengely/pont, körél-élletörés, lemezsarok-élek pontok alapján (`corner_edges`), síkban fekvő kontúrélek (`plane_edges`), lapok irány és sugár szerint (`plane_faces`, `cylinder_faces`) vagy befoglaló dobozzal (`faces_in_box`, pl. zseb összes lapja) és lekerekítésük (`fillet_edges`), hatszög laptávolsággal (`hexagon`) vagy csúcskörrel (`hexagon_corner`), körminta feature-ökből referenciatengely körül (`circular_pattern`), mentés testszám-ellenőrzéssel); `Assembly` (elhelyezés, illesztés, hajtó méret). |
+| `scripts/swk.py` | `c0`, `m`, `nv`, `byref_int`, `sw`, `open_doc`, `props`, `std_planes`, `set_material` (angol anyagnév a nyelvi anyagkönyvtárra fordítva); `Part` (vázlat, kihúzás, vágás, forgatás, ref. sík (`flip` a másik oldalra)/tengely/pont, körél-élletörés, lemezsarok-élek pontok alapján (`corner_edges`), síkban fekvő kontúrélek (`plane_edges`), lapok irány és sugár szerint (`plane_faces`, `cylinder_faces`) vagy befoglaló dobozzal (`faces_in_box`, pl. zseb összes lapja) és lekerekítésük (`fillet_edges`), hatszög laptávolsággal (`hexagon`) vagy csúcskörrel (`hexagon_corner`), körminta feature-ökből referenciatengely körül (`circular_pattern`), lineáris minta (`linear_pattern`), hosszú horony (`slot`), süllyesztett furatok (`cbore_holes`), sweep, héj (`shell`), lemezalkatrész alapperem K-tényezővel (`sheet_metal_base_flange`) és kiterített méret (`flat_size`), mentés testszám-ellenőrzéssel); `Assembly` (elhelyezés, illesztés, hajtó méret). |
 | `scripts/rajz.py` | Lap méretaránnyal, nézet explicit méretaránnyal, darabjegyzék, tételszám, metszet, törött nézet, sugár->átmérő + illesztés + menetszöveg, pontosság, lapközépvonal, megjegyzés, PDF->PNG. |
 | `scripts/step_elemzes.py` | STEP import; furatok (hengerfelületek) és komponens-befoglalók JSON-ba. |
 | `scripts/ellenorzes.py` | Alkatrész-jelentés, ütközés-összefoglaló várt darabszámmal, nézetképek, metszetkép (`section_image`), tömeg a rajz darabjegyzékéhez (`mass_check`). |
@@ -72,6 +73,8 @@ Teljes lista és a tipikus hamis eredmények: [ellenorzes.md](references/ellenor
 | `scripts/megjelenes.py` | RealView-megjelenések névelőtag-szabályokkal (összeállítás) vagy egy alkatrész összes testére (`alkatresz`, egyedi színnel is, RealView alatt is a `szines_p2m` másolattal) vagy kijelölt lapjaira (`lapok`), RealView be/ki, árnyékolt nézet élekkel (`elekkel`, mint a rajzok 3D képei), kép egyedi nézőszögből (`forgatas` sorozattal is), szögkeresés, alkatrész és rajza egy összevető képen (`alkatresz_osszevetes`), mozgásvideó képkockái rögzített nézetből, metszetben is (`mozgas_kepkockak`), MP4 ffmpeg-gel, üres háttér levágva (`video`). |
 | `scripts/kontur.py` | Lemezkontúr érintő körökből és lekerekített sarkokból, terület előre (tömegbecslés), vázlatba rajzolás. Tiszta Python, tesztelt. |
 | `scripts/forgastest.py` | Esztergált profil szakaszokból (hossz, átmérő, élletörés, horony, furat, süllyesztés), térfogat előre. Tiszta Python, tesztelt. |
+| `scripts/fogaskerek.py` | Evolvens homlokkerék zárt kontúrja pontsorként (`fogprofil`), fő átmérők, tengelytáv, terület. Tiszta Python, tesztelt. |
+| `scripts/readme_pdf.py` | README.md -> README.pdf Edge/Chrome fej nélküli nyomtatással, kicsinyített beágyazott képekkel. A `markdown` csomag kell (Anaconda). |
 | `scripts/eval_ellenor.py` | Tesztalkatrész-készlet kiértékelése (`eval/esetek.json`): várt testszám, térfogat, befoglaló méret. Lásd [eval.md](references/eval.md). |
 
 Használat saját projektszkriptből:

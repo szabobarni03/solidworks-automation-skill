@@ -484,3 +484,117 @@ def test_faces_in_box_keeps_only_enclosed_faces():
     p = object.__new__(swk.Part)
     p.doc = NS(GetBodies2=lambda a, b: [NS(GetFaces=lambda: [zseb_fenek, zseb_fal, homlok])])
     assert p.faces_in_box((-31, 19, 6), (31, 101, 10)) == [zseb_fenek, zseb_fal]
+
+
+# --- fogaskerék-profil ------------------------------------------------------------------------
+def test_fogaskerek_meretek_and_tengelytav():
+    fk = _load("fogaskerek")
+    k = fk.meretek(2, 20)
+    assert (k["d"], k["da"], k["df"]) == (40, 44, 35)
+    assert abs(k["db"] - 40 * math.cos(math.radians(20))) < 1e-12
+    assert fk.tengelytav(2, 20, 40) == 60
+
+
+def test_fogprofil_closed_within_root_and_tip_and_symmetric():
+    fk = _load("fogaskerek")
+    for z in (20, 40, 60):                       # z = 60: a lábkör az alapkör fölött van
+        pts = fk.fogprofil(2, z)
+        k = fk.meretek(2, z)
+        r = [math.hypot(x, y) for x, y in pts]
+        assert min(r) > k["df"] / 2 - 1e-9 and max(r) < k["da"] / 2 + 1e-9
+        assert len(pts) % z == 0 and len(set(pts)) == len(pts)
+        n = len(pts) // z                        # a 0. fog a +X tengelyre szimmetrikus
+        fog = pts[:n - 4]
+        for (x1, y1), (x2, y2) in zip(fog, reversed(fog)):
+            assert abs(x1 - x2) < 1e-9 and abs(y1 + y2) < 1e-9
+        assert math.pi * (k["df"] / 2) ** 2 < fk.terulet(pts) < math.pi * (k["da"] / 2) ** 2
+
+
+def test_fogprofil_tooth_thickness_on_pitch_circle():
+    """Az osztókörön a fogvastagság ívhossza π m / 2: a fogoldal-pontokból interpolálva."""
+    fk = _load("fogaskerek")
+    m_, z = 2, 20
+    pts = fk.fogprofil(m_, z, n_oldal=40)
+    r0 = m_ * z / 2
+    alsó = [(math.hypot(x, y), math.atan2(y, x)) for x, y in pts[:42] if y < 0]
+    for (ra, fa), (rb, fb) in zip(alsó, alsó[1:]):
+        if ra <= r0 <= rb:
+            fi = fa + (fb - fa) * (r0 - ra) / (rb - ra)
+            assert abs(2 * -fi * r0 - math.pi * m_ / 2) < 0.01
+            break
+    else:
+        raise AssertionError("az osztókör nem esik a fogoldalra")
+
+
+# --- új Part-műveletek (COM nélkül, ál-objektumokkal) -----------------------------------------
+def test_slot_draws_two_lines_and_two_arcs():
+    pytest.importorskip("win32com")
+    swk = _load("swk")
+    from types import SimpleNamespace as NS
+    vonal, iv = [], []
+    p = object.__new__(swk.Part)
+    p.sm = NS(CreateLine=lambda *a: vonal.append(a), CreateArc=lambda *a: iv.append(a))
+    p.slot(-15, 0, 15, 0, 10)
+    assert len(vonal) == 2 and len(iv) == 2
+    for a in iv:
+        cx, cy, _, x1, y1, _, x2, y2, _, irany = a
+        assert abs(math.hypot(x1 - cx, y1 - cy) - 0.005) < 1e-12 and irany == -1
+        assert abs(math.hypot(x2 - cx, y2 - cy) - 0.005) < 1e-12
+    assert {round(a[0], 6) for a in iv} == {-0.015, 0.015}
+
+
+def test_linear_pattern_marks_seeds_and_direction():
+    pytest.importorskip("win32com")
+    swk = _load("swk")
+    from types import SimpleNamespace as NS
+    jel, hivas = [], []
+
+    def feat(nev):
+        return NS(Name=nev, Select2=lambda app, mark: jel.append((nev, mark)) or True)
+
+    p = object.__new__(swk.Part)
+    p.name = "proba"
+    p.doc = NS(ClearSelection2=lambda b: None)
+    p.fm = NS(FeatureLinearPattern5=lambda *a: hivas.append(a) or "minta")
+    assert p.linear_pattern([feat("Furat")], feat("X"), 8, 22) == "minta"
+    assert jel == [("Furat", 4), ("X", 1)]
+    assert hivas[0][0] == 8 and abs(hivas[0][1] - 0.022) < 1e-12 and len(hivas[0]) == 22
+
+
+def test_sheet_metal_base_flange_sets_k_on_bend_subfeatures():
+    """Az alapperem `CreateDefinition(34)` + `CreateFeature`; a K-tényező csak a SketchBend
+    alfeature-ön hat, ezért ott kell beállítani (UseDefaultBendAllowance = False)."""
+    pytest.importorskip("win32com")
+    swk = _load("swk")
+    from types import SimpleNamespace as NS
+    adat = NS(ReverseThickness=True)
+    ba = NS(Type=1, KFactor=0.5)
+    od = NS(UseDefaultBendAllowance=True, AccessSelections=lambda d, c: True,
+            GetCustomBendAllowance=lambda: ba, SetCustomBendAllowance=lambda b: setattr(od, "beallitva", b))
+    modositas = []
+    hajlitas = NS(Name="Basisbiegung1", GetTypeName2=lambda: "SketchBend", GetDefinition=lambda: od,
+                  ModifyDefinition=lambda d, doc, c: modositas.append(d) or True, GetNextSubFeature=lambda: None)
+    profil = NS(Name="Skizze1", GetTypeName2=lambda: "ProfileFeature", GetNextSubFeature=lambda: hajlitas)
+    perem = NS(GetFirstSubFeature=lambda: profil)
+    p = object.__new__(swk.Part)
+    p.name = "proba"
+    p.doc = NS(ClearSelection2=lambda b: None, ForceRebuild3=lambda b: True)
+    p.fm = NS(CreateDefinition=lambda t: adat if t == 34 else None, CreateFeature=lambda d: perem)
+    vazlat = NS(Select2=lambda a, b: True)
+    assert p.sheet_metal_base_flange(vazlat, 2, 2, 25, 0.4, flip_thicken=True) is perem
+    assert abs(adat.Thickness - 0.002) < 1e-12 and abs(adat.D1EndConditionDistance - 0.025) < 1e-12
+    assert adat.ReverseThickness is False                 # a SW alapértelmezéséhez képest fordítva
+    assert od.UseDefaultBendAllowance is False and od.beallitva is ba
+    assert (ba.Type, ba.KFactor) == (2, 0.4) and modositas == [od]
+
+
+def test_readme_pdf_html_has_table_and_embedded_small_image(tmp_path):
+    pytest.importorskip("markdown")
+    Image = pytest.importorskip("PIL.Image")
+    rp = _load("readme_pdf")
+    Image.new("RGB", (2000, 1000), "white").save(tmp_path / "kep.png")
+    (tmp_path / "README.md").write_text("# Cím\n\n| a | b |\n|---|---|\n| 1 | 2 |\n\n![kép](kep.png)\n",
+                                        encoding="utf-8")
+    h = rp.html_keszit(tmp_path / "README.md")
+    assert "<table>" in h and "<title>Cím</title>" in h
+    assert 'src="data:image/jpeg;base64,' in h and "kep.png" not in h
